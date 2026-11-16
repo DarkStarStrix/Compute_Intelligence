@@ -1,12 +1,6 @@
 import { useMemo, useState } from "react";
 import { getProvider } from "@/lib/data";
-import {
-  marketSeries,
-  marketStats,
-  movingListingIds,
-  normalizedProviderSeries,
-  type NormalizedProviderSeries,
-} from "@shared/market";
+import { marketSeries, marketStats, movingListingIds } from "@shared/market";
 import { computeKinds } from "@shared/compute";
 import { billingLabel, cloudLabel, computeSpecs } from "@shared/offer-view";
 import {
@@ -59,7 +53,6 @@ export function PriceMarket({
     [selected, setSelected] = useState(initialOfferId),
     [hours, setHours] = useState<HistoryHours>(shared?.hours ?? 168),
     [moversOnly, setMoversOnly] = useState(shared?.movers ?? false),
-    [allProviders, setAllProviders] = useState(false),
     [hover, setHover] = useState<{ time: number; price: number } | null>(null);
   const [anchoredEnd, setAnchoredEnd] = useState(shared?.through);
   const [chartBounds, setChartBounds] = useState<HistoryBounds | undefined>(
@@ -114,16 +107,6 @@ export function PriceMarket({
     ) ??
     listings[0];
   const historical = pastOffers.filter(offer => offer.gpuModelId === model);
-  const normalized = useMemo(
-    () =>
-      normalizedProviderSeries(
-        catalog,
-        new Set([...currentOffers, ...pastOffers].map(offer => offer.offerId)),
-        windowStart,
-        windowEnd
-      ),
-    [catalog, currentOffers, pastOffers, windowStart, windowEnd]
-  );
   const historicalChoice = historical.find(h => h.offerId === selected);
   const linkedListingMissing = Boolean(
     shared?.id &&
@@ -236,20 +219,7 @@ export function PriceMarket({
             />
             Price movers only
           </label>
-          <label className="inline-flex items-center gap-2 rounded border border-border bg-background px-2 py-1.5 text-xs">
-            <input
-              type="checkbox"
-              className="accent-teal"
-              checked={allProviders}
-              onChange={event => {
-                setAllProviders(event.target.checked);
-                setHover(null);
-                setChartBounds(undefined);
-              }}
-            />
-            All providers · normalized
-          </label>
-          {chartId && !allProviders && (
+          {chartId && (
             <CopyViewLink
               url={viewLink(
                 {
@@ -268,317 +238,186 @@ export function PriceMarket({
           )}
         </div>
       </div>
-      {allProviders ? (
-        <NormalizedProvidersPlot
-          kind={kind}
-          modelLabel={model ? modelLabel(model) : "selected configuration"}
-          billing={billing}
-          series={normalized}
-        />
-      ) : (
-        <>
-          <select
-            aria-label="Historical listing"
-            value={chartId ?? ""}
-            disabled={!listings.length && !historical.length}
-            onChange={e => {
-              setSelected(e.target.value);
-              setHover(null);
-              setChartBounds(undefined);
-            }}
-            className="mt-4 w-full border border-border bg-background rounded p-2 text-xs"
-          >
-            {!chartId && (
-              <option value="" disabled>
-                {linkedListingMissing
-                  ? "Choose another listing"
-                  : "No matching listings"}
-              </option>
-            )}
-            {listings.map(o => (
-              <option key={o.offerId} value={o.offerId}>
-                {o.providerName} · {o.region} ·{" "}
-                {o.kind ? "" : `${cloudLabel(o)} · `}
-                {o.kind
-                  ? computeSpecs(o) || o.gpuModelName
-                  : o.configurationKnown === false
-                    ? "Per-GPU rate"
-                    : `${o.gpuCount}× GPU / ${o.vcpus ?? "—"} vCPU / ${o.ramGb ?? "—"} GB RAM`}{" "}
-                · ${o.pricePerGpuHr.toFixed(3)}{" "}
-                {isCurrent(catalog, o)
-                  ? "current quoted rate"
-                  : "last observed rate"}
-              </option>
-            ))}
-            {historical.map(h => (
-              <option key={h.offerId} value={h.offerId}>
-                {getProvider(h.providerId)?.name ?? h.providerId} · historical /
-                removed listing · {h.offerId}
-              </option>
-            ))}
-          </select>
-          {linkedListingMissing && (
-            <p role="status" className="mt-2 text-xs text-muted-foreground">
-              The linked listing is outside the current filters or recorded
-              history.
-            </p>
-          )}
-          {anchoredEnd !== undefined && (
-            <p className="mt-2 text-xs text-muted-foreground">
-              History ending {date(anchoredEnd)}.{" "}
-              <button
-                className="underline"
-                onClick={() => {
-                  setAnchoredEnd(undefined);
-                  setChartBounds(undefined);
-                  setHover(null);
-                }}
-              >
-                Use latest
-              </button>
-            </p>
-          )}
-          <div className="flex flex-wrap justify-between gap-4 mt-5 mb-4">
-            <div>
-              <div className="flex flex-wrap gap-x-3 items-baseline">
-                <strong className="font-data text-3xl tabular-nums">
-                  {headline !== undefined ? `$${headline.toFixed(3)}` : "—"}
-                </strong>
-                {changeLabel && (
-                  <span
-                    className="text-sm font-data"
-                    style={{ color: stats?.change ? color : undefined }}
-                  >
-                    {changeLabel}
-                  </span>
-                )}
-              </div>
-              <p className="text-[11px] text-muted-foreground mt-1">
-                {hover
-                  ? date(hover.time)
-                  : points.length
-                    ? `Last recorded ${date(points.at(-1)!.time)}`
-                    : "Waiting for recorded observations"}{" "}
-                · change since first sample in range
-              </p>
-            </div>
-            <div className="flex gap-1 items-start">
-              {(
-                [
-                  [1, "1H"],
-                  [24, "24H"],
-                  [168, "7D"],
-                ] as const
-              ).map(([value, label]) => (
-                <button
-                  key={value}
-                  aria-pressed={hours === value}
-                  onClick={() => {
-                    setHours(value);
-                    setHover(null);
-                    setAnchoredEnd(undefined);
-                    setChartBounds(undefined);
-                  }}
-                  className={`px-3 py-2 text-xs font-data rounded border ${hours === value ? "border-teal bg-teal/10 text-teal" : "border-border"}`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
-          {chartId && offer && !historicalChoice && (
-            <div className="flex flex-wrap items-center gap-3 mb-4 text-xs">
-              <AvailabilityBadge
-                providerLink={offer.providerLink}
-                state={
-                  isCurrent(catalog, offer) ? offer.availability : "unknown"
-                }
-              />
-              <span className="text-muted-foreground">
-                {billingLabel(offer)}
-                {offer.kind
-                  ? offer.terms
-                    ? ` · ${offer.terms}`
-                    : ""
-                  : ` · ${cloudLabel(offer)}`}
-                {!isCurrent(catalog, offer) ? " · retained / stale quote" : ""}
-              </span>
-              <a
-                className="text-teal underline ml-auto"
-                href={offer.providerLink}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Open provider ↗
-              </a>
-            </div>
-          )}
-          {points.length > 1 ? (
-            <MarketPlot
-              unit={unit}
-              key={`${chartId}:${hours}:${anchoredEnd ?? "latest"}`}
-              points={points}
-              color={color}
-              stats={stats!}
-              onInspect={setHover}
-              bounds={chartBounds}
-              onBoundsChange={setChartBounds}
-            />
-          ) : (
-            <div className="h-60 flex items-center justify-center text-muted-foreground text-sm">
-              {moversOnly && !chartId
-                ? "No recorded price moves for this billing type in the selected period."
-                : points.length === 1
-                  ? "One recorded sample in this range. Widen the range to see history."
-                  : "No recorded samples in this range."}
-            </div>
-          )}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 border-t border-border pt-4 mt-3 text-xs">
-            {[
-              ["First sample", stats?.first],
-              ["Sampled high", stats?.high],
-              ["Sampled low", stats?.low],
-              ["Observations", stats?.count],
-            ].map(([label, v]) => (
-              <div key={label}>
-                <p className="text-muted-foreground mb-1">{label}</p>
-                <strong className="font-data">
-                  {v === undefined
-                    ? "—"
-                    : label === "Observations"
-                      ? v
-                      : `$${Number(v).toFixed(3)}`}
-                </strong>
-              </div>
-            ))}
-          </div>
-          <p className="text-[11px] text-muted-foreground mt-4">
-            {kind === "gpu" && billing === "spot"
-              ? "Nebius spot history includes provider hourly-last prices at completed interval ends. Interruptible pricing is separate from on-demand."
-              : "Collector observations from the selected listing. History starts at its first successful collection."}{" "}
-            The line connects recorded samples; between-sample prices are
-            unknown. No fabricated candles, volume, or price ticks. Flat rates
-            stay flat. Collection is scheduled every 15 minutes. The page checks
-            for new snapshots every minute.
-          </p>
-        </>
+      <select
+        aria-label="Historical listing"
+        value={chartId ?? ""}
+        disabled={!listings.length && !historical.length}
+        onChange={e => {
+          setSelected(e.target.value);
+          setHover(null);
+          setChartBounds(undefined);
+        }}
+        className="mt-4 w-full border border-border bg-background rounded p-2 text-xs"
+      >
+        {!chartId && (
+          <option value="" disabled>
+            {linkedListingMissing
+              ? "Choose another listing"
+              : "No matching listings"}
+          </option>
+        )}
+        {listings.map(o => (
+          <option key={o.offerId} value={o.offerId}>
+            {o.providerName} · {o.region} ·{" "}
+            {o.kind ? "" : `${cloudLabel(o)} · `}
+            {o.kind
+              ? computeSpecs(o) || o.gpuModelName
+              : o.configurationKnown === false
+                ? "Per-GPU rate"
+                : `${o.gpuCount}× GPU / ${o.vcpus ?? "—"} vCPU / ${o.ramGb ?? "—"} GB RAM`}{" "}
+            · ${o.pricePerGpuHr.toFixed(3)}{" "}
+            {isCurrent(catalog, o)
+              ? "current quoted rate"
+              : "last observed rate"}
+          </option>
+        ))}
+        {historical.map(h => (
+          <option key={h.offerId} value={h.offerId}>
+            {getProvider(h.providerId)?.name ?? h.providerId} · historical /
+            removed listing · {h.offerId}
+          </option>
+        ))}
+      </select>
+      {linkedListingMissing && (
+        <p role="status" className="mt-2 text-xs text-muted-foreground">
+          The linked listing is outside the current filters or recorded history.
+        </p>
       )}
-    </div>
-  );
-}
-
-const providerColors = [
-  "#0f766e",
-  "#2563eb",
-  "#c2410c",
-  "#7c3aed",
-  "#be123c",
-  "#15803d",
-  "#a16207",
-  "#0369a1",
-];
-
-function NormalizedProvidersPlot({
-  kind,
-  modelLabel,
-  billing,
-  series,
-}: {
-  kind: ListingKind;
-  modelLabel: string;
-  billing: string;
-  series: NormalizedProviderSeries[];
-}) {
-  const overlapStart = Math.max(...series.map(line => line.times[0]), 0);
-  const overlapEnd = Math.min(...series.map(line => line.times.at(-1)!), 0);
-  const times = [
-    ...new Set(
-      series.flatMap(line =>
-        line.times.filter(time => time >= overlapStart && time <= overlapEnd)
-      )
-    ),
-  ].sort((a, b) => a - b);
-  const valueAt = (line: NormalizedProviderSeries, time: number) => {
-    let value = line.values[0];
-    for (let index = 1; index < line.times.length; index++) {
-      if (line.times[index] > time) break;
-      value = line.values[index];
-    }
-    return value;
-  };
-  const lines = series.map((line, index) => ({
-    ...line,
-    color: providerColors[index % providerColors.length],
-    values: times.map(time => valueAt(line, time)),
-  }));
-  const values = lines.flatMap(line => line.values);
-  const low = values.length ? Math.min(...values) : 95;
-  const high = values.length ? Math.max(...values) : 105;
-  const padding = Math.max((high - low) * 0.15, 2);
-  return (
-    <div className="mt-4">
-      <div className="rounded-lg border border-teal/30 bg-teal/5 p-3 text-xs text-muted-foreground">
-        Each provider is rebased to{" "}
-        <strong className="text-foreground">100</strong> at the first shared
-        observation. The lines show relative movement, so provider size and
-        absolute price do not dominate the comparison.
-      </div>
-      {times.length > 1 ? (
-        <>
-          <TimeSeriesPlot
-            label={
-              "Normalized " +
-              kind +
-              " provider prices for " +
-              modelLabel +
-              ". 100 equals each provider's first shared observation."
-            }
-            times={times}
-            series={lines.map(line => ({
-              label: getProvider(line.providerId)?.name ?? line.providerId,
-              color: line.color,
-              values: line.values,
-            }))}
-            domain={[Math.max(0, low - padding), high + padding]}
-            height={300}
-            formatTime={date}
-            formatValue={value => value.toFixed(0)}
-          />
-          <ul className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-muted-foreground mt-2">
-            {lines.map(line => (
-              <li key={line.providerId} className="flex items-center gap-1.5">
-                <span
-                  className="w-3 h-0.5"
-                  style={{ background: line.color }}
-                />
-                {getProvider(line.providerId)?.name ?? line.providerId}
-              </li>
-            ))}
-          </ul>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 border-t border-border pt-4 mt-4 text-xs">
-            {lines.map(line => (
-              <div key={line.providerId}>
-                <p className="text-muted-foreground mb-1 truncate">
-                  {getProvider(line.providerId)?.name ?? line.providerId}
-                </p>
-                <strong className="font-data">
-                  {line.values.at(-1)!.toFixed(1)} ·{" "}
-                  {(line.values.at(-1)! - 100).toFixed(1)}%
-                </strong>
-              </div>
-            ))}
+      {anchoredEnd !== undefined && (
+        <p className="mt-2 text-xs text-muted-foreground">
+          History ending {date(anchoredEnd)}.{" "}
+          <button
+            className="underline"
+            onClick={() => {
+              setAnchoredEnd(undefined);
+              setChartBounds(undefined);
+              setHover(null);
+            }}
+          >
+            Use latest
+          </button>
+        </p>
+      )}
+      <div className="flex flex-wrap justify-between gap-4 mt-5 mb-4">
+        <div>
+          <div className="flex flex-wrap gap-x-3 items-baseline">
+            <strong className="font-data text-3xl tabular-nums">
+              {headline !== undefined ? `$${headline.toFixed(3)}` : "—"}
+            </strong>
+            {changeLabel && (
+              <span
+                className="text-sm font-data"
+                style={{ color: stats?.change ? color : undefined }}
+              >
+                {changeLabel}
+              </span>
+            )}
           </div>
-        </>
-      ) : (
-        <div className="h-60 flex items-center justify-center text-muted-foreground text-sm">
-          Not enough shared observations for a provider comparison.
+          <p className="text-[11px] text-muted-foreground mt-1">
+            {hover
+              ? date(hover.time)
+              : points.length
+                ? `Last recorded ${date(points.at(-1)!.time)}`
+                : "Waiting for recorded observations"}{" "}
+            · change since first sample in range
+          </p>
+        </div>
+        <div className="flex gap-1 items-start">
+          {(
+            [
+              [1, "1H"],
+              [24, "24H"],
+              [168, "7D"],
+            ] as const
+          ).map(([value, label]) => (
+            <button
+              key={value}
+              aria-pressed={hours === value}
+              onClick={() => {
+                setHours(value);
+                setHover(null);
+                setAnchoredEnd(undefined);
+                setChartBounds(undefined);
+              }}
+              className={`px-3 py-2 text-xs font-data rounded border ${hours === value ? "border-teal bg-teal/10 text-teal" : "border-border"}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+      {chartId && offer && !historicalChoice && (
+        <div className="flex flex-wrap items-center gap-3 mb-4 text-xs">
+          <AvailabilityBadge
+            providerLink={offer.providerLink}
+            state={isCurrent(catalog, offer) ? offer.availability : "unknown"}
+          />
+          <span className="text-muted-foreground">
+            {billingLabel(offer)}
+            {offer.kind
+              ? offer.terms
+                ? ` · ${offer.terms}`
+                : ""
+              : ` · ${cloudLabel(offer)}`}
+            {!isCurrent(catalog, offer) ? " · retained / stale quote" : ""}
+          </span>
+          <a
+            className="text-teal underline ml-auto"
+            href={offer.providerLink}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Open provider ↗
+          </a>
         </div>
       )}
+      {points.length > 1 ? (
+        <MarketPlot
+          unit={unit}
+          key={`${chartId}:${hours}:${anchoredEnd ?? "latest"}`}
+          points={points}
+          color={color}
+          stats={stats!}
+          onInspect={setHover}
+          bounds={chartBounds}
+          onBoundsChange={setChartBounds}
+        />
+      ) : (
+        <div className="h-60 flex items-center justify-center text-muted-foreground text-sm">
+          {moversOnly && !chartId
+            ? "No recorded price moves for this billing type in the selected period."
+            : points.length === 1
+              ? "One recorded sample in this range. Widen the range to see history."
+              : "No recorded samples in this range."}
+        </div>
+      )}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 border-t border-border pt-4 mt-3 text-xs">
+        {[
+          ["First sample", stats?.first],
+          ["Sampled high", stats?.high],
+          ["Sampled low", stats?.low],
+          ["Observations", stats?.count],
+        ].map(([label, v]) => (
+          <div key={label}>
+            <p className="text-muted-foreground mb-1">{label}</p>
+            <strong className="font-data">
+              {v === undefined
+                ? "—"
+                : label === "Observations"
+                  ? v
+                  : `$${Number(v).toFixed(3)}`}
+            </strong>
+          </div>
+        ))}
+      </div>
       <p className="text-[11px] text-muted-foreground mt-4">
-        {modelLabel} · {billing === "spot" ? "spot" : "on-demand"} · shared
-        observation window. Provider points use the median matching listing
-        price at each timestamp. Missing intervals carry the last observed value
-        until the next observation.
+        {kind === "gpu" && billing === "spot"
+          ? "Nebius spot history includes provider hourly-last prices at completed interval ends. Interruptible pricing is separate from on-demand."
+          : "Collector observations from the selected listing. History starts at its first successful collection."}{" "}
+        The line connects recorded samples; between-sample prices are unknown.
+        No fabricated candles, volume, or price ticks. Flat rates stay flat.
+        Collection is scheduled every 15 minutes. The page checks for new
+        snapshots every minute.
       </p>
     </div>
   );

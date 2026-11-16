@@ -66,63 +66,6 @@ export function marketSeries(
 ) {
   return marketSeriesByOffer(snapshot, [offerId], since, until).get(offerId)!;
 }
-
-export type NormalizedProviderSeries = {
-  providerId: string;
-  times: number[];
-  values: number[];
-  first: number;
-  last: number;
-};
-
-/**
- * Compare provider price direction without letting different absolute price
- * levels dominate the chart. Each provider starts at 100, using the median
- * price of its matching listings at each observation time.
- */
-export function normalizedProviderSeries(
-  snapshot: Snapshot,
-  offerIds: Set<string>,
-  since: number,
-  until: number
-): NormalizedProviderSeries[] {
-  const grouped = new Map<string, Map<number, number[]>>();
-  for (const point of snapshot.history) {
-    if (!offerIds.has(point.offerId)) continue;
-    const time = Date.parse(point.observedAt);
-    if (!Number.isFinite(time) || time < since || time > until) continue;
-    const byTime = grouped.get(point.providerId) ?? new Map<number, number[]>();
-    const prices = byTime.get(time) ?? [];
-    prices.push(point.pricePerGpuHr);
-    byTime.set(time, prices);
-    grouped.set(point.providerId, byTime);
-  }
-
-  return [...grouped]
-    .map(([providerId, byTime]) => {
-      const raw = [...byTime]
-        .sort(([a], [b]) => a - b)
-        .map(([time, prices]) => {
-          const sorted = [...prices].sort((a, b) => a - b);
-          return {
-            time,
-            price: sorted[Math.floor(sorted.length / 2)],
-          };
-        });
-      const first = raw[0]?.price;
-      if (!first) return null;
-      return {
-        providerId,
-        times: raw.map(point => point.time),
-        values: raw.map(point => (point.price / first) * 100),
-        first,
-        last: raw.at(-1)!.price,
-      };
-    })
-    .filter((series): series is NormalizedProviderSeries => series !== null)
-    .filter(series => series.times.length > 1)
-    .sort((a, b) => a.providerId.localeCompare(b.providerId));
-}
 export function marketStats(points: { price: number }[]) {
   if (!points.length) return null;
   const first = points[0].price,

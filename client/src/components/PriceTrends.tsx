@@ -124,12 +124,13 @@ export function PriceTrends({
 }
 function PoolMovement({ snapshot: catalog }: { snapshot: Snapshot }) {
   const [provider, setProvider] = useState("runpod");
+  const [allProviders, setAllProviders] = useState(false);
   const pool = catalog.poolHistory ?? [];
   const data = pool
     .filter(p => p.providerId === provider)
     .sort((a, b) => a.observedAt.localeCompare(b.observedAt));
   const times = data.map(p => Date.parse(p.observedAt));
-  const replay = useReplay(times.length, provider);
+  const replay = useReplay(times.length, allProviders ? "all" : provider);
   const selected = data[replay.index];
   const visible = data.slice(0, replay.index + 1);
   const series = stockSeries.map(({ key, label, color }) => ({
@@ -154,6 +155,69 @@ function PoolMovement({ snapshot: catalog }: { snapshot: Snapshot }) {
     ) * 4
   );
   const source = catalog.sources.find(s => s.id === provider);
+  const providerLines = [...new Set(pool.map(point => point.providerId))]
+    .map(providerId => {
+      const points = pool
+        .filter(point => point.providerId === providerId)
+        .sort((a, b) => a.observedAt.localeCompare(b.observedAt));
+      const baseline = points[0]?.total;
+      return baseline
+        ? {
+            providerId,
+            points,
+            baseline,
+          }
+        : null;
+    })
+    .filter(
+      (
+        line
+      ): line is {
+        providerId: string;
+        points: typeof pool;
+        baseline: number;
+      } => Boolean(line)
+    );
+  const sharedStart = Math.max(
+    ...providerLines.map(line => Date.parse(line.points[0].observedAt)),
+    0
+  );
+  const sharedEnd = Math.min(
+    ...providerLines.map(line => Date.parse(line.points.at(-1)!.observedAt)),
+    0
+  );
+  const normalizedTimes = [
+    ...new Set(
+      providerLines.flatMap(line =>
+        line.points
+          .map(point => Date.parse(point.observedAt))
+          .filter(time => time >= sharedStart && time <= sharedEnd)
+      )
+    ),
+  ].sort((a, b) => a - b);
+  const normalizedValue = (
+    line: (typeof providerLines)[number],
+    time: number
+  ) => {
+    let total = line.points[0].total;
+    for (const point of line.points) {
+      if (Date.parse(point.observedAt) > time) break;
+      total = point.total;
+    }
+    return (total / line.baseline) * 100;
+  };
+  const normalizedLines = providerLines.map((line, index) => ({
+    providerId: line.providerId,
+    color: ["#0f766e", "#2563eb", "#c2410c", "#7c3aed", "#be123c"][index % 5],
+    values: normalizedTimes.map(time => normalizedValue(line, time)),
+  }));
+  const normalizedValues = normalizedLines.flatMap(line => line.values);
+  const normalizedLow = normalizedValues.length
+    ? Math.min(...normalizedValues)
+    : 95;
+  const normalizedHigh = normalizedValues.length
+    ? Math.max(...normalizedValues)
+    : 105;
   return (
     <div className="bg-card border border-border rounded-xl p-5 mt-6 shadow-[var(--shadow-sm)]">
       <div className="flex justify-between items-center gap-4 mb-4">
@@ -164,26 +228,41 @@ function PoolMovement({ snapshot: catalog }: { snapshot: Snapshot }) {
             refreshes
           </p>
         </div>
-        <select
-          aria-label="Timeline provider"
-          className="bg-card border border-border rounded-md p-2 text-xs"
-          value={provider}
-          onChange={e => setProvider(e.target.value)}
-        >
-          {[...new Set(pool.map(p => p.providerId))].map(id => (
-            <option key={id} value={id}>
-              {getProvider(id)?.name ?? id}
-            </option>
-          ))}
-        </select>
+        <div className="flex flex-wrap gap-2 justify-end">
+          <select
+            aria-label="Timeline provider"
+            className="bg-card border border-border rounded-md p-2 text-xs"
+            value={provider}
+            disabled={allProviders}
+            onChange={e => setProvider(e.target.value)}
+          >
+            {[...new Set(pool.map(p => p.providerId))].map(id => (
+              <option key={id} value={id}>
+                {getProvider(id)?.name ?? id}
+              </option>
+            ))}
+          </select>
+          <label className="inline-flex items-center gap-2 rounded border border-border bg-background px-2 py-1.5 text-xs">
+            <input
+              type="checkbox"
+              className="accent-teal"
+              checked={allProviders}
+              onChange={event => setAllProviders(event.target.checked)}
+            />
+            All providers · normalized
+          </label>
+        </div>
       </div>
-      {source?.status !== "ok" && (
+      {!allProviders && source?.status !== "ok" && (
         <p className="text-xs text-coral mb-3">
           Refresh failed or source is inactive. Showing the last successful
           observations.
         </p>
       )}
-      <ReplayControls replay={replay} times={times} />
+      <ReplayControls
+        replay={replay}
+        times={allProviders ? normalizedTimes : times}
+      />
       {selected && (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-5 text-xs font-data">
           {[
@@ -209,7 +288,44 @@ function PoolMovement({ snapshot: catalog }: { snapshot: Snapshot }) {
           ))}
         </div>
       )}
-      {times.length < 2 ? (
+      {allProviders ? (
+        normalizedTimes.length < 2 ? (
+          <p className="py-12 text-sm text-muted-foreground text-center">
+            Providers need at least two shared observations for a normalized
+            movement comparison.
+          </p>
+        ) : (
+          <>
+            <TimeSeriesPlot
+              key="all-providers"
+              label="Normalized provider catalog size. Each provider starts at 100."
+              times={normalizedTimes.slice(0, replay.index + 1)}
+              timeEnd={normalizedTimes.at(-1)}
+              series={normalizedLines.map(line => ({
+                label: getProvider(line.providerId)?.name ?? line.providerId,
+                color: line.color,
+                values: line.values.slice(0, replay.index + 1),
+              }))}
+              domain={[Math.max(0, normalizedLow - 5), normalizedHigh + 5]}
+              height={225}
+              formatTime={timeLabel}
+              formatValue={value => value.toFixed(0)}
+            />
+            <ul className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+              {normalizedLines.map(line => (
+                <li key={line.providerId} className="flex items-center gap-1.5">
+                  <span
+                    aria-hidden="true"
+                    className="w-3 h-0.5"
+                    style={{ background: line.color }}
+                  />
+                  {getProvider(line.providerId)?.name ?? line.providerId}
+                </li>
+              ))}
+            </ul>
+          </>
+        )
+      ) : times.length < 2 ? (
         <p className="py-12 text-sm text-muted-foreground text-center">
           Baseline recorded. Turnover appears after the next successful refresh.
         </p>
@@ -245,7 +361,8 @@ function PoolMovement({ snapshot: catalog }: { snapshot: Snapshot }) {
         Counts describe observed catalog listings, not physical GPUs or global
         capacity. Pricing pages cannot establish stock. Failed refreshes create
         no removal events. Each change count compares with the preceding
-        successful snapshot.
+        successful snapshot. The all-provider mode rebases each provider's
+        observed listing total to 100 so relative movement is comparable.
       </p>
     </div>
   );
