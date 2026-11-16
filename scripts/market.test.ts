@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { h100Quote, marketSeries, marketStats } from "../shared/market";
+import {
+  h100Quote,
+  marketSeries,
+  marketStats,
+  normalizedProviderSeries,
+} from "../shared/market";
 import { parseRunpod } from "./providers";
 import { collect } from "./collect";
 import fixture from "./fixtures/runpod.json";
@@ -90,6 +95,37 @@ describe("market observations", () => {
       high: 4,
       low: 2,
     });
+  });
+  it("normalizes each provider to 100 while preserving relative movement", async () => {
+    const s = await sample();
+    const point = s.history.find(item => item.offerId === "limited")!;
+    s.history = [
+      { ...point, observedAt: "2026-11-05T17:00:00Z", pricePerGpuHr: 2 },
+      { ...point, observedAt: "2026-11-05T18:00:00Z", pricePerGpuHr: 3 },
+      {
+        ...point,
+        offerId: "other",
+        providerId: "other",
+        observedAt: "2026-11-05T17:00:00Z",
+        pricePerGpuHr: 10,
+      },
+      {
+        ...point,
+        offerId: "other",
+        providerId: "other",
+        observedAt: "2026-11-05T18:00:00Z",
+        pricePerGpuHr: 8,
+      },
+    ];
+    const lines = normalizedProviderSeries(
+      s,
+      new Set(["limited", "other"]),
+      Date.parse("2026-11-05T17:00:00Z"),
+      now
+    );
+    expect(lines.map(line => line.providerId)).toEqual(["other", "runpod"]);
+    expect(lines[0].values).toEqual([100, 80]);
+    expect(lines[1].values).toEqual([100, 150]);
   });
 });
 

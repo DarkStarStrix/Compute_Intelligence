@@ -44,6 +44,17 @@ it("keeps provider replay and distinguishes flat prices from a return to the sta
       host.querySelector('[aria-label="Observation timeline"]')
     ).not.toBeNull();
     expect(host.textContent).not.toContain("Current pool inventory");
+    await act(() =>
+      host
+        .querySelectorAll<HTMLInputElement>('input[type="checkbox"]')[1]
+        .click()
+    );
+    expect(host.textContent).toContain("Each provider is rebased to 100");
+    await act(() =>
+      host
+        .querySelectorAll<HTMLInputElement>('input[type="checkbox"]')[1]
+        .click()
+    );
 
     const between = {
       ...sample,
