@@ -178,20 +178,10 @@ function PoolMovement({ snapshot: catalog }: { snapshot: Snapshot }) {
         baseline: number;
       } => Boolean(line)
     );
-  const sharedStart = Math.max(
-    ...providerLines.map(line => Date.parse(line.points[0].observedAt)),
-    0
-  );
-  const sharedEnd = Math.min(
-    ...providerLines.map(line => Date.parse(line.points.at(-1)!.observedAt)),
-    0
-  );
   const normalizedTimes = [
     ...new Set(
       providerLines.flatMap(line =>
-        line.points
-          .map(point => Date.parse(point.observedAt))
-          .filter(time => time >= sharedStart && time <= sharedEnd)
+        line.points.map(point => Date.parse(point.observedAt))
       )
     ),
   ].sort((a, b) => a - b);
@@ -263,7 +253,7 @@ function PoolMovement({ snapshot: catalog }: { snapshot: Snapshot }) {
         replay={replay}
         times={allProviders ? normalizedTimes : times}
       />
-      {selected && (
+      {!allProviders && selected && (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-5 text-xs font-data">
           {[
             ["Observed listings", selected.total],
@@ -291,8 +281,7 @@ function PoolMovement({ snapshot: catalog }: { snapshot: Snapshot }) {
       {allProviders ? (
         normalizedTimes.length < 2 ? (
           <p className="py-12 text-sm text-muted-foreground text-center">
-            Providers need at least two shared observations for a normalized
-            movement comparison.
+            No provider movement observations are available yet.
           </p>
         ) : (
           <>
@@ -361,8 +350,8 @@ function PoolMovement({ snapshot: catalog }: { snapshot: Snapshot }) {
         Counts describe observed catalog listings, not physical GPUs or global
         capacity. Pricing pages cannot establish stock. Failed refreshes create
         no removal events. Each change count compares with the preceding
-        successful snapshot. The all-provider mode rebases each provider's
-        observed listing total to 100 so relative movement is comparable.
+        successful snapshot. The all-provider mode rebases each provider's first
+        observed listing total to 100 so all collected data can share one chart.
       </p>
     </div>
   );
