@@ -92,3 +92,15 @@ Deploy through the existing workflow after local gates. Rollback uses a reviewed
 ## Missed-refresh regression
 
 A two-hour collection gap previously emptied overview projections because catalog configuration removed every stale offer. Price display now retains last observations while freshness remains a separate property. Provider/GPU counts describe tracked inventory; fresh stock counts abstain when no current stock reports exist. Strict `h100Quote`/market queries still exclude stale observations; `displayQuote` explicitly labels fallback data and prefers any eligible fresh quote over cheaper retained quotes. Regression tests advance time three hours and exercise the rendered overview, provider summaries, comparison and hero. Scheduled GitHub execution is best effort; a successful manual dispatch does not establish that schedule events are arriving.
+
+## Optional product analytics
+
+The public site remains a snapshot-backed GitHub Pages SPA. Analytics does not execute searches, resolve outbound destinations, write price snapshots, or modify collector/refresh/watchlist state. The browser owns user intent and rendered-result observations; its typed event client uses session-only identifiers by default, opt-in 90-day browser IDs, bounded in-memory delivery and direct provider links. Missing configuration, GPC/DNT, opt-out and network/quota failures must never block product use.
+
+A separate ingestion Worker validates allowlisted event batches and deduplicates UUIDs in an analytics-only D1 database. Its independent cron reads the public snapshot for observed source health; it never dispatches collection. Private reports are SQL views inside the existing authenticated Cloudflare D1 console. There is no extra admin application or Access setup. No analytics database token or raw user-event export is exposed to the public site.
+
+Observed event funnels are distinct from verified humans, inventory guarantees or provider-confirmed transactions. Searches use the current browser filters; unstated GPU quantity/memory requirements are not inferred. Return cohorts cover only opted-in browser IDs with a mature observation window. Raw records expire under daily 90-day cleanup while a non-identifying collection-start baseline remains. Commercial events never alter organic result ordering.
+
+Rollout and rollback are isolated from pricing: publish the ingestion service and verify private native D1 access before enabling the frontend endpoint, or leave custom delivery disabled. Clear the endpoint and rebuild to disable collection without rolling back newer price observations. See [analytics operations and metric contracts](analytics/README.md). Local SQL/runtime tests do not prove quota capacity or production delivery.
+
+Private product reports are also available as native D1 SQL views behind the existing Cloudflare account login. This is the default low-friction reporting route; no Zero Trust subscription or card setup is required for it. The versioned SQL migration is the single definition of reporting behavior.

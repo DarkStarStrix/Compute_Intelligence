@@ -1,8 +1,3 @@
-/*
-  QuickComparison — Premium animated GPU comparison cards
-  Design: Data Observatory v2 — elevated cards, staggered entrance, accent bars
-*/
-
 import { useState } from "react";
 import {
   buildComparisons,
@@ -156,6 +151,11 @@ function ComparisonCard({
               </div>
               <div className="flex items-center gap-2.5">
                 <AvailabilityBadge
+                  analytics={{
+                    provider: p.providerId,
+                    source: "hero",
+                    kind: "gpu",
+                  }}
                   providerLink={p.link}
                   state={p.availability}
                 />
@@ -168,6 +168,10 @@ function ComparisonCard({
                 </span>
                 <a
                   aria-label={`Visit ${p.providerName}`}
+                  data-analytics-provider={p.providerId}
+                  data-analytics-model={row.gpuModelId}
+                  data-analytics-kind="gpu"
+                  data-analytics-source="hero"
                   href={p.link}
                   target="_blank"
                   rel="noopener noreferrer"

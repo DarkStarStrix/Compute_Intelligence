@@ -111,3 +111,7 @@ Support, provider referrals, and sponsor acknowledgments are controlled by publi
 ## Add your provider or contribute
 
 GPU, CPU, TPU, and sandbox integrations are welcome. Start with [contribution instructions](CONTRIBUTING.md) and the [provider onboarding guide](docs/provider-onboarding.md), then submit one data-only JSON file using the provider PR template. Provider PRs do not change collector code; maintainers wire new sources in a separate reviewed integration. You can also [request a provider](https://github.com/DarkStarStrix/gpu-price-tracker/issues/new?template=provider.yml) with official pricing sources. Listing does not require sponsorship or referral enrollment.
+
+## Private product analytics
+
+The optional [analytics layer](analytics/README.md) measures session-level discovery, comparisons and direct provider clicks without changing price collection. Return-visit identifiers require opt-in through **Privacy & analytics**. Its D1 database is separate from watchlists; private reports use the existing Cloudflare D1 console without extra Access onboarding. Custom event delivery stays disabled until `ANALYTICS_API_URL` is configured for the Pages build.

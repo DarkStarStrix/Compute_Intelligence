@@ -70,6 +70,7 @@ jobs:
       - run: pnpm build:pages
         env:
           VITE_WATCH_API: ${{ vars.WATCH_API_URL }}
+          VITE_ANALYTICS_API_URL: ${{ vars.ANALYTICS_API_URL }}
       - name: Record the built snapshot timestamp
         id: snapshot
         run: |

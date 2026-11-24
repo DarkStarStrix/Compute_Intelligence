@@ -1,3 +1,4 @@
+import { track } from "@/lib/analytics";
 import { lazy, startTransition, Suspense, useState, useEffect } from "react";
 import { activeSponsors, publicUrl } from "@/config/support";
 import { LiveH100 } from "@/components/LiveH100";
@@ -51,6 +52,12 @@ const SupportDialog = lazy(() =>
   }))
 );
 
+const PrivacyDialog = lazy(() =>
+  import("@/components/PrivacyDialog").then(module => ({
+    default: module.PrivacyDialog,
+  }))
+);
+
 type Tab = "overview" | "offers" | "providers" | "trends";
 
 const TABS: { id: Tab; label: string }[] = [
@@ -61,6 +68,7 @@ const TABS: { id: Tab; label: string }[] = [
 ];
 
 export default function Home() {
+  const [privacyOpen, setPrivacyOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
   const sponsors = activeSponsors();
   const [sharedView, setSharedView] = useState(() =>
@@ -83,6 +91,12 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>(
     sharedView?.view ?? "overview"
   );
+  useEffect(() => {
+    track("tab_viewed", { tab: activeTab });
+  }, [activeTab]);
+  useEffect(() => {
+    if (supportOpen) track("support_opened", { source: "support" });
+  }, [supportOpen]);
   const [offerRequest, setOfferRequest] = useState(0);
   const [offersVisited, setOffersVisited] = useState(activeTab === "offers");
   const generatedAt = catalog.generatedAt;
@@ -484,6 +498,8 @@ export default function Home() {
                 {sponsors.slice(0, 3).map(sponsor => (
                   <a
                     key={sponsor.url}
+                    data-analytics-commercial="sponsor"
+                    data-analytics-source="hero"
                     href={publicUrl(sponsor.url)}
                     target="_blank"
                     rel="sponsored noopener noreferrer"
@@ -558,6 +574,7 @@ export default function Home() {
               <Suspense fallback={<p role="status">Loading offers…</p>}>
                 <OffersTable
                   key={offerRequest}
+                  active={activeTab === "offers" && offerKind === "gpu"}
                   initialGpu={initialGpu}
                   initialProvider={
                     providerSelection.kind === "gpu" ? providerSelection.id : ""
@@ -578,6 +595,7 @@ export default function Home() {
               <Suspense fallback={<p role="status">Loading compute prices…</p>}>
                 <OffersTable
                   key={offerKind}
+                  active={activeTab === "offers"}
                   kind={offerKind}
                   initialProvider={
                     providerSelection.kind === offerKind
@@ -668,6 +686,11 @@ export default function Home() {
       </main>
 
       {/* ── Footer ──────────────────────────────────────────────────────── */}
+      {privacyOpen && (
+        <Suspense fallback={<p role="status">Opening privacy settings…</p>}>
+          <PrivacyDialog onClose={() => setPrivacyOpen(false)} />
+        </Suspense>
+      )}
       {supportOpen && (
         <Suspense
           fallback={
@@ -762,6 +785,13 @@ export default function Home() {
         <div className="container pb-4">
           <div className="section-rule mb-4" />
           <p className="font-data text-xs text-muted-foreground text-center">
+            <button
+              type="button"
+              className="text-teal underline mr-3"
+              onClick={() => setPrivacyOpen(true)}
+            >
+              Privacy & analytics
+            </button>
             Prices are indicative and may vary. Always verify directly with
             providers before committing to workloads.
           </p>

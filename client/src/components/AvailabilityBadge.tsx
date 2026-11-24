@@ -1,8 +1,4 @@
-/*
-  AvailabilityBadge — Premium availability state indicator
-  Design: Data Observatory v2 — pill badges with pulsing dot for available state
-*/
-
+import type { AnalyticsProperties } from "@shared/analytics";
 import type { AvailabilityState } from "@/lib/data";
 import { availabilityLabel } from "@/lib/data";
 
@@ -10,6 +6,10 @@ interface AvailabilityBadgeProps {
   state: AvailabilityState;
   className?: string;
   providerLink?: string;
+  analytics?: Pick<
+    AnalyticsProperties,
+    "provider" | "listing" | "source" | "kind"
+  >;
 }
 
 const stateStyles: Record<
@@ -54,10 +54,15 @@ export function AvailabilityBadge({
   state,
   className = "",
   providerLink,
+  analytics,
 }: AvailabilityBadgeProps) {
   if (state === "unknown")
     return providerLink ? (
       <a
+        data-analytics-provider={analytics?.provider}
+        data-analytics-listing={analytics?.listing}
+        data-analytics-source={analytics?.source}
+        data-analytics-kind={analytics?.kind}
         href={providerLink}
         target="_blank"
         rel="noopener noreferrer"

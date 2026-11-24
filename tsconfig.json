@@ -4,10 +4,12 @@
     "shared",
     "scripts",
     "alerts",
+    "analytics",
     "refresh",
     "vite.config.ts",
     "vitest.config.ts"
   ],
+  "exclude": ["node_modules", "**/* 2.*"],
   "compilerOptions": {
     "target": "ES2022",
     "module": "ESNext",

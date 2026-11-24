@@ -1,3 +1,4 @@
+import { useAnalyticsSearch } from "@/hooks/useAnalyticsSearch";
 import {
   lazy,
   Suspense,
@@ -98,12 +99,14 @@ function sortOffers(
 }
 
 export function OffersTable({
+  active = true,
   initialGpu = "",
   initialProvider = "",
   kind = "gpu",
   onViewHistory,
   shared,
 }: {
+  active?: boolean;
   initialGpu?: string;
   initialProvider?: string;
   kind?: ListingKind;
@@ -137,6 +140,10 @@ export function OffersTable({
         shared.filters.cloud ||
         shared.filters.maxPrice)
     )
+  );
+  const searchStartedAt = useRef(performance.now());
+  const [intent, setIntent] = useState(() =>
+    initialGpu || initialProvider || shared ? 1 : 0
   );
   const [page, setPage] = useState(1);
   const tableStart = useRef<HTMLHeadingElement>(null);
@@ -177,10 +184,14 @@ export function OffersTable({
   const [alertTarget, setAlertTarget] = useState<Listing | null>(null);
 
   function updateFilter(key: keyof Filters, value: string) {
+    searchStartedAt.current = performance.now();
+    setIntent(previous => previous + 1);
     setFilters(previous => ({ ...previous, [key]: value }));
     setPage(1);
   }
   function clearFilters() {
+    searchStartedAt.current = performance.now();
+    setIntent(previous => previous + 1);
     setFilters(emptyFilters);
     setPage(1);
   }
@@ -246,6 +257,18 @@ export function OffersTable({
         return sortDir === "asc" ? order : -order;
       });
   }, [filters, sortDir, sortKey, view]);
+
+  useAnalyticsSearch(
+    filters,
+    active,
+    intent,
+    {
+      startedAt: searchStartedAt.current,
+      total: filtered.length,
+      fresh: filtered.filter(row => !row.retained).length,
+    },
+    kind
+  );
 
   const liveGpuModels = useMemo(
     () =>
@@ -651,7 +674,6 @@ export function OffersTable({
                 offer={offer}
                 history={historyByListing?.get(offer.offerId)}
                 onEstimate={() => setCostOffer(offer)}
-                onWatch={() => setWatchOffer(offer)}
                 retained={retained}
                 availability={availability}
                 isSelected={selectedIds.includes(offer.offerId)}
@@ -918,7 +940,6 @@ function OfferRow({
   offer,
   history,
   onEstimate,
-  onWatch,
   retained,
   availability,
   isSelected,
@@ -932,7 +953,6 @@ function OfferRow({
   offer: Listing;
   history?: ReturnType<typeof priceHistorySummary>;
   onEstimate: () => void;
-  onWatch: () => void;
   retained: boolean;
   availability: Listing["availability"];
   isSelected: boolean;
@@ -1073,6 +1093,12 @@ function OfferRow({
       </td>
       <td>
         <AvailabilityBadge
+          analytics={{
+            provider: offer.providerId,
+            listing: offer.offerId,
+            source: "offers",
+            kind: offer.kind ?? "gpu",
+          }}
           providerLink={offer.providerLink}
           state={availability}
         />
@@ -1091,15 +1117,6 @@ function OfferRow({
           <button
             type="button"
             className="offer-button offer-icon-button"
-            aria-label={`Watch listing for ${description}`}
-            title="Background price or stock notifications"
-            onClick={onWatch}
-          >
-            <BellPlus size={16} />
-          </button>
-          <button
-            type="button"
-            className="offer-button offer-icon-button"
             data-alert-set={hasAlert || undefined}
             aria-label={`Set price alert for ${description}`}
             title={
@@ -1112,6 +1129,16 @@ function OfferRow({
             <Bell size={16} />
           </button>
           <a
+            data-analytics-provider={offer.providerId}
+            data-analytics-listing={offer.offerId}
+            data-analytics-model={offer.gpuModelId}
+            data-analytics-kind={offer.kind ?? "gpu"}
+            data-analytics-source="offers"
+            data-analytics-stock={availability}
+            data-analytics-retained={String(retained)}
+            data-analytics-price={offer.pricePerGpuHr}
+            data-analytics-region={offer.region}
+            data-analytics-unit={listingUnit(offer.kind)}
             href={offer.providerLink}
             target="_blank"
             rel="noopener noreferrer"

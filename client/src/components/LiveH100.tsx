@@ -63,6 +63,12 @@ export function LiveH100() {
           </p>
           <div className="flex flex-wrap gap-2 mt-2 items-center">
             <AvailabilityBadge
+              analytics={{
+                provider: offer.providerId,
+                listing: offer.offerId,
+                source: "hero",
+                kind: "gpu",
+              }}
               providerLink={offer.providerLink}
               state={retained ? "unknown" : offer.availability}
             />

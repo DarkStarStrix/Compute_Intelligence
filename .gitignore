@@ -9,3 +9,5 @@ dist/
 work/
 .wrangler/
 alerts/wrangler.local.jsonc
+
+analytics/wrangler.*.local.jsonc

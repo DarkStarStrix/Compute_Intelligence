@@ -108,6 +108,8 @@ export function ProviderCards({ snapshot }: { snapshot: Snapshot }) {
                 {website && (
                   <a
                     aria-label={`Visit ${source.name}`}
+                    data-analytics-provider={source.id}
+                    data-analytics-source="providers"
                     href={website}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -119,7 +121,7 @@ export function ProviderCards({ snapshot }: { snapshot: Snapshot }) {
               </div>
 
               <div className="px-5 pb-4 text-xs text-muted-foreground">
-                <ProviderReferral providerId={source.id} />
+                <ProviderReferral source="providers" providerId={source.id} />
                 <span
                   className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-data ${connected ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300" : "bg-muted text-muted-foreground"}`}
                 >

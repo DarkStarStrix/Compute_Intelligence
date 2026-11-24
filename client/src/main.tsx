@@ -1,5 +1,6 @@
 import { createRoot } from "react-dom/client";
 import App from "./App";
+import { startAnalytics } from "./lib/analytics";
 import { loadCatalog } from "./lib/catalog";
 import "./index.css";
 const root = createRoot(document.getElementById("root")!);
@@ -7,6 +8,7 @@ let mounted = false;
 function mountDashboard() {
   if (mounted) return;
   mounted = true;
+  startAnalytics();
   root.render(<App />);
 }
 

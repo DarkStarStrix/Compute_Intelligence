@@ -1,3 +1,4 @@
+import type { AnalyticsProperties } from "@shared/analytics";
 import {
   activeReferrals,
   publicUrl,
@@ -9,9 +10,11 @@ import {
 export function ProviderReferral({
   providerId,
   settings,
+  source = "support",
 }: {
   providerId: string;
   settings?: SupportSettings;
+  source?: AnalyticsProperties["source"];
 }) {
   const referral = activeReferrals(settings).find(
     item => item.providerId === providerId
@@ -20,6 +23,9 @@ export function ProviderReferral({
   return (
     <div className="mt-2 text-xs leading-relaxed">
       <a
+        data-analytics-commercial="referral"
+        data-analytics-provider={providerId}
+        data-analytics-source={source}
         href={publicUrl(referral.signupUrl)}
         target="_blank"
         rel="sponsored noopener noreferrer"

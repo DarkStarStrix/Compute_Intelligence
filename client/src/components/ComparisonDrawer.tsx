@@ -1,3 +1,5 @@
+import { useEffect, useRef } from "react";
+import { track } from "@/lib/analytics";
 import { ProviderReferral } from "./ProviderReferral";
 import { providerLogo } from "@/lib/data";
 import { X, ExternalLink } from "lucide-react";
@@ -57,6 +59,20 @@ export function ComparisonDrawer({
   shareUrl: string;
   missingSharedCount: number;
 }) {
+  const lastComparison = useRef("");
+  const identity = offers
+    .map(offer => offer.offerId)
+    .sort()
+    .join("|");
+  useEffect(() => {
+    if (offers.length < 2 || identity === lastComparison.current) return;
+    lastComparison.current = identity;
+    track("comparison_opened", {
+      listings: offers.length,
+      kind: offers[0].kind ?? "gpu",
+      source: "comparison",
+    });
+  }, [identity, offers]);
   if (offers.length < 2) return null;
   const mixed =
     new Set(offers.map(o => `${o.gpuModelId}:${o.billingModel ?? "on-demand"}`))
@@ -220,6 +236,12 @@ export function ComparisonDrawer({
                   <td key={o.offerId} className="p-3">
                     <AvailabilityBadge
                       state={o.availability}
+                      analytics={{
+                        provider: o.providerId,
+                        listing: o.offerId,
+                        source: "comparison",
+                        kind: o.kind ?? "gpu",
+                      }}
                       providerLink={o.providerLink}
                     />
                   </td>
@@ -258,6 +280,14 @@ export function ComparisonDrawer({
                 {offers.map(o => (
                   <td key={o.offerId} className="p-3">
                     <a
+                      data-analytics-provider={o.providerId}
+                      data-analytics-listing={o.offerId}
+                      data-analytics-model={o.gpuModelId}
+                      data-analytics-kind={o.kind ?? "gpu"}
+                      data-analytics-source="comparison"
+                      data-analytics-price={o.pricePerGpuHr}
+                      data-analytics-region={o.region}
+                      data-analytics-unit={listingUnit(o.kind)}
                       href={o.providerLink}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -265,7 +295,10 @@ export function ComparisonDrawer({
                     >
                       Open provider <ExternalLink size={12} />
                     </a>
-                    <ProviderReferral providerId={o.providerId} />
+                    <ProviderReferral
+                      source="comparison"
+                      providerId={o.providerId}
+                    />
                   </td>
                 ))}
               </tr>

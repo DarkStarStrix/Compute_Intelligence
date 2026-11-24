@@ -1,3 +1,4 @@
+import { track } from "@/lib/analytics";
 import { useEffect, useRef, useState } from "react";
 import { Link2 } from "lucide-react";
 
@@ -19,6 +20,7 @@ export function CopyViewLink({ url }: { url: string }) {
         onClick={async () => {
           try {
             await navigator.clipboard.writeText(url);
+            track("share_link_copied");
             setCopied(url);
             setManual(false);
           } catch {

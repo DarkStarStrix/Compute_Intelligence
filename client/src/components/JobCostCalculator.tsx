@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { track } from "@/lib/analytics";
+import { useEffect, useRef, useState } from "react";
 import type { Listing } from "@shared/catalog";
 import { estimateJobCost } from "@shared/job-cost";
 
@@ -22,6 +23,20 @@ export function JobCostCalculator({ offers }: { offers: Listing[] }) {
   const estimates = offers.map(offer =>
     estimateJobCost(offer, Number(count), Number(runtime))
   );
+  const changed = useRef(false);
+  useEffect(() => {
+    if (!changed.current) return;
+    const timer = setTimeout(() => {
+      if (estimates.every(Boolean))
+        track("calculator_used", {
+          kind: kind ?? "gpu",
+          source: "offers",
+          quantity: Number(count),
+          hours: Number(runtime),
+        });
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [count, runtime, kind]);
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
@@ -34,7 +49,10 @@ export function JobCostCalculator({ offers }: { offers: Listing[] }) {
             min="1"
             step="1"
             value={count}
-            onChange={e => setCount(e.target.value)}
+            onChange={e => {
+              changed.current = true;
+              setCount(e.target.value);
+            }}
           />
         </label>
         <label className="offer-field">
@@ -46,7 +64,10 @@ export function JobCostCalculator({ offers }: { offers: Listing[] }) {
             min="0"
             step="any"
             value={runtime}
-            onChange={e => setRuntime(e.target.value)}
+            onChange={e => {
+              changed.current = true;
+              setRuntime(e.target.value);
+            }}
           />
         </label>
       </div>

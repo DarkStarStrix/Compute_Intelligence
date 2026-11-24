@@ -52,6 +52,8 @@ export function SupportDialog({
           {stripe ? (
             <>
               <a
+                data-analytics-commercial="stripe"
+                data-analytics-source="support"
                 href={stripe}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -107,6 +109,8 @@ export function SupportDialog({
             individually.
           </p>
           <a
+            data-analytics-commercial="inquiry"
+            data-analytics-source="support"
             href={contact}
             target={contact.startsWith("https:") ? "_blank" : undefined}
             rel="noopener noreferrer"
@@ -133,6 +137,8 @@ export function SupportDialog({
               {sponsors.map(sponsor => (
                 <li key={sponsor.url}>
                   <a
+                    data-analytics-commercial="sponsor"
+                    data-analytics-source="support"
                     href={publicUrl(sponsor.url)}
                     target="_blank"
                     rel="sponsored noopener noreferrer"

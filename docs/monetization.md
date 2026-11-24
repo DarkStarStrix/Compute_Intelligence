@@ -48,3 +48,5 @@ Run `pnpm check`, `pnpm test`, and `pnpm build:pages`. Check desktop/mobile rend
 Free technical submissions use `provider-submissions/<id>.json` and the provider PR template. Sponsorship and paid featuring use the sponsorship inquiry. The provider intake check rejects changes to commercial settings, collector code, runtime files, workflows, and snapshots in an intake PR.
 
 Paid featuring can be discussed in the inquiry; there is no automated paid listing or featured-offer ranking. Agree any placement separately and label it clearly as sponsored. The existing sponsor acknowledgment area is available without changing offer sorting. A new placement requires its own reviewed UI change. Payment never changes source data, stock, collection cadence, or organic comparison order.
+
+For current verified programs, payout distinctions and application paths, see [affiliate launch shortlist](affiliate-programs.md). Do not activate example earning URLs.
