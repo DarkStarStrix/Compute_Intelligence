@@ -210,17 +210,24 @@ export function OffersTable({
       return {
         offer,
         retained,
+        searchText: [offer.gpuModelName, offer.providerName, offer.region]
+          .join(" ")
+          .toLowerCase(),
         availability: retained ? ("unknown" as const) : offer.availability,
       };
     });
   }, [offers]);
   const filtered = useMemo(() => {
-    const query = filters.search.trim().toLowerCase();
+    const terms = filters.search
+      .trim()
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(Boolean);
     const maximum =
       filters.maxPrice === "" ? Infinity : Number(filters.maxPrice);
     return view
       .filter(
-        ({ offer, availability }) =>
+        ({ offer, availability, searchText }) =>
           (!filters.billing ||
             (offer.billingModel ?? "on-demand") === filters.billing) &&
           (!filters.cloud || offer.cloudType === filters.cloud) &&
@@ -229,10 +236,7 @@ export function OffersTable({
           (!filters.availability || availability === filters.availability) &&
           (!filters.region || offer.region === filters.region) &&
           offer.pricePerGpuHr <= maximum &&
-          (!query ||
-            [offer.gpuModelName, offer.providerName, offer.region].some(value =>
-              value.toLowerCase().includes(query)
-            ))
+          terms.every(term => searchText.includes(term))
       )
       .sort((a, b) => {
         const order =
@@ -316,6 +320,33 @@ export function OffersTable({
     filters.maxPrice,
   ].filter(Boolean).length;
   const hasFilters = Object.values(filters).some(Boolean);
+  const filterNames: Record<keyof Filters, string> = {
+    search: "Search",
+    gpuModel: gpu ? "GPU" : "Configuration",
+    provider: "Provider",
+    billing: "Billing",
+    cloud: "Cloud tier",
+    availability: "Stock",
+    region: "Region",
+    maxPrice: "Max price",
+  };
+  const filterOptions: Partial<Record<keyof Filters, readonly FilterOption[]>> =
+    {
+      gpuModel: liveGpuModels,
+      provider: liveProviders,
+      cloud: cloudTiers,
+      billing: [
+        ["on-demand", "On-demand"],
+        ["spot", "Spot"],
+      ],
+      availability: [
+        ["available", "Available"],
+        ["limited", "Limited"],
+        ["unavailable", "Unavailable"],
+        ["unknown", "Needs stock check"],
+      ],
+    };
+
   const alertCount = new Set(offers.map(alertKey).filter(id => alerts[id]))
     .size;
   const failedFeeds = (snapshot.compute ?? []).filter(
@@ -428,6 +459,9 @@ export function OffersTable({
               <Search size={16} aria-hidden="true" />
               <input
                 type="search"
+                name="offer-search"
+                autoComplete="off"
+                spellCheck={false}
                 placeholder={
                   gpu
                     ? "GPU, provider, region"
@@ -485,6 +519,36 @@ export function OffersTable({
           </div>
         </div>
       </div>
+
+      {hasFilters && (
+        <ul
+          className="offer-market__applied-filters"
+          aria-label="Applied filters"
+        >
+          {(Object.entries(filters) as [keyof Filters, string][])
+            .filter(([, value]) => value)
+            .map(([key, value]) => {
+              const label =
+                filterOptions[key]?.find(([id]) => id === value)?.[1] ?? value;
+              return (
+                <li key={key}>
+                  <button
+                    type="button"
+                    className="offer-filter-chip"
+                    onClick={() => updateFilter(key, "")}
+                    aria-label={`Remove ${filterNames[key]} filter: ${label}`}
+                  >
+                    <span>
+                      {filterNames[key]}: {label}
+                      {key === "maxPrice" ? ` USD / ${unit}` : ""}
+                    </span>
+                    <X size={14} aria-hidden="true" />
+                  </button>
+                </li>
+              );
+            })}
+        </ul>
+      )}
 
       <div className="offer-market__status">
         <div>
@@ -553,7 +617,11 @@ export function OffersTable({
         </p>
       )}
 
+      <p id="offer-table-hint" className="offer-table-hint">
+        Scroll horizontally to see all details and actions.
+      </p>
       <div
+        aria-describedby="offer-table-hint"
         className="offer-market__table-wrap"
         tabIndex={0}
         role="region"
@@ -1024,7 +1092,7 @@ function OfferRow({
             type="button"
             className="offer-button offer-icon-button"
             aria-label={`Watch listing for ${description}`}
-            title="Watch price or stock"
+            title="Background price or stock notifications"
             onClick={onWatch}
           >
             <BellPlus size={16} />
@@ -1034,7 +1102,11 @@ function OfferRow({
             className="offer-button offer-icon-button"
             data-alert-set={hasAlert || undefined}
             aria-label={`Set price alert for ${description}`}
-            title={hasAlert ? "Edit price alert" : "Set price alert"}
+            title={
+              hasAlert
+                ? "Edit local price highlight"
+                : "Highlight offers at a target price"
+            }
             onClick={onSetAlert}
           >
             <Bell size={16} />

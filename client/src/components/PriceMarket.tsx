@@ -122,6 +122,17 @@ export function PriceMarket({
       chartId ? marketSeries(catalog, chartId, windowStart, windowEnd) : [],
     [catalog, chartId, windowStart, windowEnd]
   );
+  const lastRecordedAt = useMemo(
+    () =>
+      catalog.history.reduce(
+        (latest, point) =>
+          point.offerId === chartId
+            ? Math.max(latest, Date.parse(point.observedAt))
+            : latest,
+        0
+      ),
+    [catalog, chartId]
+  );
   const stats = marketStats(points);
   const color =
     (stats?.change ?? 0) >= 0 ? "var(--sage)" : "var(--destructive)";
@@ -142,11 +153,11 @@ export function PriceMarket({
     setChartBounds(undefined);
   };
   return (
-    <div className="bg-card border border-border rounded-xl p-5 shadow-sm mb-6">
+    <div className="bg-card border border-border rounded-xl p-5 mb-6">
       <div className="flex flex-wrap justify-between items-start gap-4">
         <div>
-          <p className="text-[10px] font-data text-muted-foreground tracking-widest uppercase">
-            {kind === "gpu" ? "GPU" : computeKinds[kind].label} market tape ·
+          <p className="text-xs text-muted-foreground">
+            {kind === "gpu" ? "GPU" : computeKinds[kind].label} price history ·
             USD / {unit}
           </p>
           <h3 className="font-semibold text-xl mt-1">
@@ -156,10 +167,10 @@ export function PriceMarket({
             One listing, real timestamps. Automatic snapshot updates.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex min-w-0 flex-wrap gap-2">
           <select
             aria-label="Chart compute type"
-            className="border border-border rounded bg-background p-2 text-xs"
+            className="dashboard-control"
             value={kind}
             onChange={event => {
               setKind(event.target.value as ListingKind);
@@ -175,7 +186,7 @@ export function PriceMarket({
           </select>
           <select
             aria-label="Price billing model"
-            className="border border-border rounded bg-background p-2 text-xs"
+            className="dashboard-control"
             value={billing}
             onChange={e => {
               setBilling(e.target.value);
@@ -189,7 +200,7 @@ export function PriceMarket({
             aria-label={
               kind === "gpu" ? "Chart GPU model" : "Chart configuration"
             }
-            className="border border-border rounded bg-background p-2 text-xs max-w-60"
+            className="dashboard-control max-w-60"
             value={model ?? ""}
             disabled={!models.length}
             onChange={e => {
@@ -206,7 +217,7 @@ export function PriceMarket({
               </option>
             ))}
           </select>
-          <label className="inline-flex items-center gap-2 rounded border border-border bg-background px-2 py-1.5 text-xs">
+          <label className="dashboard-control dashboard-toggle">
             <input
               type="checkbox"
               className="accent-teal"
@@ -247,7 +258,7 @@ export function PriceMarket({
           setHover(null);
           setChartBounds(undefined);
         }}
-        className="mt-4 w-full border border-border bg-background rounded p-2 text-xs"
+        className="dashboard-control mt-4 w-full"
       >
         {!chartId && (
           <option value="" disabled>
@@ -313,7 +324,7 @@ export function PriceMarket({
               </span>
             )}
           </div>
-          <p className="text-[11px] text-muted-foreground mt-1">
+          <p className="text-xs text-muted-foreground mt-1">
             {hover
               ? date(hover.time)
               : points.length
@@ -339,7 +350,7 @@ export function PriceMarket({
                 setAnchoredEnd(undefined);
                 setChartBounds(undefined);
               }}
-              className={`px-3 py-2 text-xs font-data rounded border ${hours === value ? "border-teal bg-teal/10 text-teal" : "border-border"}`}
+              className={`min-h-10 px-3 py-2 text-xs font-data rounded-md border ${hours === value ? "border-teal bg-teal/10 text-teal" : "border-border"}`}
             >
               {label}
             </button>
@@ -383,12 +394,29 @@ export function PriceMarket({
           onBoundsChange={setChartBounds}
         />
       ) : (
-        <div className="h-60 flex items-center justify-center text-muted-foreground text-sm">
+        <div className="min-h-60 flex flex-col gap-3 items-center justify-center text-center text-muted-foreground text-sm">
           {moversOnly && !chartId
             ? "No recorded price moves for this billing type in the selected period."
             : points.length === 1
               ? "One recorded sample in this range. Widen the range to see history."
               : "No recorded samples in this range."}
+          {!points.length && lastRecordedAt > 0 && (
+            <>
+              <p className="text-xs">
+                Latest recorded sample: {date(lastRecordedAt)}.
+              </p>
+              <button
+                className="dashboard-control text-teal font-medium"
+                onClick={() => {
+                  setAnchoredEnd(lastRecordedAt);
+                  setHover(null);
+                  setChartBounds(undefined);
+                }}
+              >
+                Show latest recorded history
+              </button>
+            </>
+          )}
         </div>
       )}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 border-t border-border pt-4 mt-3 text-xs">
@@ -410,7 +438,7 @@ export function PriceMarket({
           </div>
         ))}
       </div>
-      <p className="text-[11px] text-muted-foreground mt-4">
+      <p className="text-xs text-muted-foreground mt-4">
         {kind === "gpu" && billing === "spot"
           ? "Nebius spot history includes provider hourly-last prices at completed interval ends. Interruptible pricing is separate from on-demand."
           : "Collector observations from the selected listing. History starts at its first successful collection."}{" "}

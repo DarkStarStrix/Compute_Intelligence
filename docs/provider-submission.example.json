@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "id": "example-cloud",
+  "name": "Example Cloud",
+  "website": "https://example.com",
+  "relationship": "provider-representative",
+  "computeKinds": ["gpu"],
+  "pricingUrl": "https://example.com/pricing",
+  "source": {
+    "url": "https://example.com/api/pricing",
+    "format": "json",
+    "authentication": "none",
+    "collectionPermission": "Replace with the public collection terms or permission reference.",
+    "rateLimits": "Replace with documented limits; say unknown if not published.",
+    "pagination": "Replace with pagination and completeness rules.",
+    "stockReporting": "No stock field; availability must remain unknown."
+  },
+  "pricing": {
+    "currency": "USD",
+    "billingUnit": "USD per whole node-hour",
+    "normalizationExample": "Illustrative only: 8 H100 GPUs at $24/node-hour => $3/GPU-hour. Replace with a verified source row.",
+    "configuration": "8 x H100 SXM 80 GB; replace with actual CPU/RAM and minimum size.",
+    "regions": ["Replace with actual region"],
+    "billingModels": ["on-demand"],
+    "minimumRentalAndFees": "Replace with minimum rental, storage/egress and other excluded charges."
+  },
+  "sample": {
+    "retrievedAt": "2026-11-24T12:00:00Z",
+    "payload": "Replace with a small actual public JSON or HTML sample. No credentials or private account data."
+  },
+  "limitations": "Example only, not a live integration. Replace all illustrative content before submitting."
+}

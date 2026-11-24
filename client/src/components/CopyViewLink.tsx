@@ -1,9 +1,16 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link2 } from "lucide-react";
 
 export function CopyViewLink({ url }: { url: string }) {
   const [copied, setCopied] = useState("");
   const [manual, setManual] = useState(false);
+  const fallback = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (manual) {
+      fallback.current?.focus();
+      fallback.current?.select();
+    }
+  }, [manual]);
   return (
     <div className="min-w-0">
       <button
@@ -26,13 +33,19 @@ export function CopyViewLink({ url }: { url: string }) {
         {copied === url && "Share link copied"}
       </span>
       {manual && (
-        <input
-          aria-label="Share link"
-          className="mt-2 block w-full rounded border border-border bg-background p-2 text-xs"
-          readOnly
-          value={url}
-          onFocus={event => event.currentTarget.select()}
-        />
+        <div className="mt-2">
+          <p role="status" className="mb-1 text-xs text-muted-foreground">
+            Automatic copying is unavailable. Copy the selected link below.
+          </p>
+          <input
+            ref={fallback}
+            aria-label="Share link"
+            className="mt-2 block w-full rounded border border-border bg-background p-2 text-xs"
+            readOnly
+            value={url}
+            onFocus={event => event.currentTarget.select()}
+          />
+        </div>
       )}
     </div>
   );

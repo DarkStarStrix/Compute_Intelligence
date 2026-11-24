@@ -80,7 +80,7 @@ export function AvailabilityBadge({
   return (
     <span
       title={`Provider reports ${availabilityLabel(state).toLowerCase()} capacity; checked at the offer timestamp`}
-      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full font-data text-[10px] tracking-wide font-medium ${s.container} ${s.text} ${className}`}
+      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full font-data text-xs tracking-wide font-medium ${s.container} ${s.text} ${className}`}
     >
       <span className={`relative w-2 h-2 rounded-full ${s.dot} flex-shrink-0`}>
         {s.pulse && (

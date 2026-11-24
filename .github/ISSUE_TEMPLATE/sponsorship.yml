@@ -1,0 +1,42 @@
+name: Project sponsorship
+description: Discuss supporting Compute Intelligence development
+title: "Sponsorship inquiry: "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for your interest in sponsoring Compute Intelligence.
+        This is a public issue. Do not include private contact information, budgets, payment details, or credentials.
+        Sponsorship supports development, clearly labeled acknowledgments, and separately agreed paid featuring. It does not buy organic rankings, price changes, stock claims, or collection priority. Free provider integration uses the separate provider form and data-only PR process.
+  - type: input
+    id: organization
+    attributes:
+      label: Organization or project
+      placeholder: Public organization name
+    validations:
+      required: true
+  - type: input
+    id: website
+    attributes:
+      label: Public website
+      placeholder: https://example.com
+    validations:
+      required: true
+  - type: dropdown
+    id: placement
+    attributes:
+      label: Interest
+      options:
+        - Project sponsorship or acknowledgment
+        - Clearly labeled paid featuring
+        - Other commercial partnership
+    validations:
+      required: true
+  - type: textarea
+    id: interest
+    attributes:
+      label: Sponsorship interest
+      description: Describe your goals using information you are comfortable publishing. Terms and timing can be discussed separately.
+    validations:
+      required: true

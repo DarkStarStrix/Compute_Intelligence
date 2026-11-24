@@ -34,57 +34,64 @@ export function ComputeTicker({
   const hovering = useRef(false);
   const group = useRef<HTMLDivElement>(null);
   const now = Date.now();
-  const gpu = new Map<string, { price: number; providers: Set<string> }>();
+  const gpu = new Map<
+    string,
+    { price: number; providers: Set<string>; retained: boolean }
+  >();
   for (const offer of snapshot.offers) {
     if (
       !featuredModels.has(offer.gpuModelId) ||
       offer.billingModel === "spot" ||
-      offer.availability === "unavailable" ||
-      !isCurrent(snapshot, offer, now)
+      offer.availability === "unavailable"
     )
       continue;
-    const current = gpu.get(offer.gpuModelId) ?? {
-      price: Infinity,
-      providers: new Set<string>(),
-    };
+    const retained = !isCurrent(snapshot, offer, now);
+    let current = gpu.get(offer.gpuModelId);
+    // Prefer fresh quotes for each model; retain an explicitly labeled floor otherwise.
+    if (current && !current.retained && retained) continue;
+    if (!current || (current.retained && !retained)) {
+      current = { price: Infinity, providers: new Set<string>(), retained };
+    }
     current.price = Math.min(current.price, offer.pricePerGpuHr);
     current.providers.add(offer.providerId);
     gpu.set(offer.gpuModelId, current);
   }
   const gpuCards = [...gpu]
     .sort(([, a], [, b]) => b.providers.size - a.providers.size)
-    .map(([id, { price }]) => ({
+    .map(([id, { price, retained }]) => ({
       id,
       label: featuredModels.get(id)!,
       price,
+      retained,
       unit: "GPU-hour",
       open: () => onGpu(id),
     }));
   const otherCards = (Object.keys(computeKinds) as ComputeKind[]).flatMap(
     kind => {
-      const prices = (snapshot.compute ?? [])
-        .filter(
-          feed =>
-            feed.status === "ok" &&
-            feed.observedAt &&
-            !isStale(feed.observedAt, now)
-        )
-        .flatMap(feed =>
-          feed.rates
-            .filter(
-              rate =>
-                rate.kind === kind &&
-                rate.billing === "on-demand" &&
-                rate.availability !== "unavailable"
-            )
-            .map(rate => rate.price)
-        );
+      const feeds = (snapshot.compute ?? []).filter(feed => feed.observedAt);
+      const rates = feeds.flatMap(feed =>
+        feed.rates
+          .filter(
+            rate =>
+              rate.kind === kind &&
+              rate.billing === "on-demand" &&
+              rate.availability !== "unavailable"
+          )
+          .map(rate => ({
+            price: rate.price,
+            retained: feed.status !== "ok" || isStale(feed.observedAt!, now),
+          }))
+      );
+      const fresh = rates.filter(rate => !rate.retained);
+      const usable = fresh.length ? fresh : rates;
+      const prices = usable.map(rate => rate.price);
       return prices.length
         ? [
             {
               id: kind,
               ...computeKinds[kind],
               price: Math.min(...prices),
+              retained: !fresh.length,
               open: () => onCompute(kind),
             },
           ]
@@ -138,13 +145,13 @@ export function ComputeTicker({
 
   return (
     <section
-      aria-label="Compute watchlist"
+      aria-label="Compute price ticker"
       className="border-b border-border bg-card"
     >
       <div className="container flex items-center gap-3">
         <div className="hidden sm:block shrink-0 pr-2">
           <h2 className="text-sm font-semibold">Compute watchlist</h2>
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             On-demand price floors
           </p>
         </div>
@@ -175,11 +182,16 @@ export function ComputeTicker({
                 >
                   <span className="block whitespace-nowrap text-xs font-semibold">
                     {card.label}
+                    {card.retained && (
+                      <span className="ml-1.5 font-normal text-muted-foreground">
+                        Last observed
+                      </span>
+                    )}
                   </span>
                   <span className="whitespace-nowrap font-data text-xs text-teal">
                     {hourlyPrice.format(card.price)}
                   </span>
-                  <span className="ml-1 whitespace-nowrap text-[10px] text-muted-foreground">
+                  <span className="ml-1 whitespace-nowrap text-xs text-muted-foreground">
                     / {card.unit}
                   </span>
                 </button>

@@ -1,8 +1,4 @@
-/*
-  ProviderCards — Premium provider profile cards
-  Design: Data Observatory v2 — elevated cards, accent bars, animated details
-*/
-
+import { ProviderReferral } from "./ProviderReferral";
 import {
   buildProviderSummaries,
   formatPrice,
@@ -25,11 +21,6 @@ function timeAgo(at: string, now: number): string {
   return `${Math.floor(diffHr / 24)}d ago`;
 }
 
-const PROVIDER_ACCENT: Record<string, string> = {
-  runpod: "from-[oklch(0.60_0.18_155)] to-[oklch(0.62_0.19_218)]",
-  coreweave: "from-[oklch(0.52_0.16_255)] to-[oklch(0.62_0.19_218)]",
-  paperspace: "from-[oklch(0.62_0.19_218)] to-[oklch(0.60_0.18_155)]",
-};
 const INACTIVE_STATUS = {
   not_configured: "Credentials required",
   error: "Refresh failed",
@@ -56,7 +47,7 @@ export function ProviderCards({ snapshot }: { snapshot: Snapshot }) {
   return (
     <section className="mb-10">
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-        {summaries.map((summary, idx) => {
+        {summaries.map(summary => {
           const { source, profile, pricingUrl, compute } = summary;
           const hasGpuFeed = summary.kinds.includes("gpu");
           const computeFresh =
@@ -64,8 +55,6 @@ export function ProviderCards({ snapshot }: { snapshot: Snapshot }) {
             !!compute.observedAt &&
             !isStale(compute.observedAt, now);
           const leaseRates = source.leaseRates;
-          const accentGradient =
-            PROVIDER_ACCENT[source.id] ?? PROVIDER_ACCENT.paperspace;
           const connected =
             source.status === "ok" &&
             source.lastSuccessAt !== null &&
@@ -83,14 +72,10 @@ export function ProviderCards({ snapshot }: { snapshot: Snapshot }) {
           return (
             <article
               key={source.id}
-              className="elevated-card rounded-xl overflow-hidden animate-fade-up flex flex-col"
-              style={{ animationDelay: `${idx * 70}ms` }}
+              className="elevated-card rounded-xl overflow-hidden flex flex-col"
             >
-              {/* Gradient accent top bar */}
-              <div className={`h-[3px] bg-gradient-to-r ${accentGradient}`} />
-
               {/* Header */}
-              <div className="px-5 pt-5 pb-4 flex items-start justify-between">
+              <div className="px-5 pt-5 pb-4 flex items-start justify-between gap-2">
                 <div className="flex items-center gap-3">
                   <div className="w-11 h-11 shrink-0 rounded-xl bg-white border border-border/60 flex items-center justify-center overflow-hidden">
                     {profile ? (
@@ -106,13 +91,13 @@ export function ProviderCards({ snapshot }: { snapshot: Snapshot }) {
                       <Cpu className="w-5 h-5 text-muted-foreground" />
                     )}
                   </div>
-                  <div>
-                    <h3 className="font-bold text-base text-foreground">
+                  <div className="min-w-0">
+                    <h3 className="font-semibold text-base text-foreground break-words">
                       {source.name}
                     </h3>
-                    <div className="flex items-center gap-2 mt-0.5">
+                    <div className="flex flex-wrap items-center gap-2 mt-1">
                       {profile && <CategoryBadge category={profile.category} />}
-                      <span className="font-data text-[10px] text-muted-foreground">
+                      <span className="font-data text-xs text-muted-foreground">
                         {leaseRates
                           ? `${leaseRates.length} lease quotes`
                           : `${summary.offerCount + (compute?.rates.length ?? 0)} offers`}
@@ -126,7 +111,7 @@ export function ProviderCards({ snapshot }: { snapshot: Snapshot }) {
                     href={website}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-8 h-8 flex items-center justify-center rounded-lg text-teal hover:bg-teal-subtle transition-all duration-150 hover:scale-110"
+                    className="size-10 shrink-0 flex items-center justify-center rounded-lg text-teal hover:bg-teal-subtle transition-colors duration-150"
                   >
                     <ExternalLink className="w-4 h-4" />
                   </a>
@@ -134,8 +119,9 @@ export function ProviderCards({ snapshot }: { snapshot: Snapshot }) {
               </div>
 
               <div className="px-5 pb-4 text-xs text-muted-foreground">
+                <ProviderReferral providerId={source.id} />
                 <span
-                  className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[10px] font-data ${connected ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300" : "bg-muted text-muted-foreground"}`}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-data ${connected ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300" : "bg-muted text-muted-foreground"}`}
                 >
                   <span
                     className={`w-1.5 h-1.5 rounded-full ${connected ? "bg-emerald-500" : "bg-slate-400"}`}
@@ -143,7 +129,7 @@ export function ProviderCards({ snapshot }: { snapshot: Snapshot }) {
                   {status}
                 </span>
                 {summary.offerCount > 0 && (
-                  <span className="ml-2 text-[10px] font-data text-muted-foreground">
+                  <span className="ml-2 text-xs font-data text-muted-foreground">
                     {summary.billingModels.length > 1
                       ? "On-demand + spot"
                       : summary.billingModels[0] === "spot"
@@ -175,7 +161,7 @@ export function ProviderCards({ snapshot }: { snapshot: Snapshot }) {
                 )}
               </div>
 
-              <div className="mx-5 h-px bg-gradient-to-r from-border via-border/50 to-transparent mb-4" />
+              <div className="mx-5 h-px bg-border mb-4" />
 
               {hasGpuFeed && (
                 <>
@@ -198,13 +184,13 @@ export function ProviderCards({ snapshot }: { snapshot: Snapshot }) {
                         {summary.gpuInventory.slice(0, 4).map(gpu => (
                           <span
                             key={gpu}
-                            className="font-data text-[9px] px-1.5 py-0.5 bg-muted rounded text-foreground leading-tight"
+                            className="font-data text-xs px-1.5 py-0.5 bg-muted rounded text-foreground leading-tight"
                           >
                             {gpu}
                           </span>
                         ))}
                         {summary.gpuInventory.length > 4 && (
-                          <span className="font-data text-[9px] px-1.5 py-0.5 bg-muted rounded text-muted-foreground">
+                          <span className="font-data text-xs px-1.5 py-0.5 bg-muted rounded text-muted-foreground">
                             +{summary.gpuInventory.length - 4}
                           </span>
                         )}
@@ -246,7 +232,7 @@ export function ProviderCards({ snapshot }: { snapshot: Snapshot }) {
                           {summary.regionCoverage.map(region => (
                             <span
                               key={region}
-                              className="font-data text-[9px] px-1.5 py-0.5 bg-muted rounded text-foreground"
+                              className="font-data text-xs px-1.5 py-0.5 bg-muted rounded text-foreground"
                             >
                               {region}
                             </span>
@@ -391,7 +377,7 @@ export function ProviderCards({ snapshot }: { snapshot: Snapshot }) {
               )}
               {/* Footer: notes + last polled */}
               <div className="mt-auto px-5 py-3 bg-secondary border-t border-border/40 flex items-center justify-between gap-2">
-                <details className="text-[11px] text-muted-foreground leading-relaxed flex-1 min-w-0">
+                <details className="text-xs text-muted-foreground leading-relaxed flex-1 min-w-0">
                   <summary className="cursor-pointer hover:text-foreground">
                     Source details
                   </summary>
@@ -415,7 +401,7 @@ export function ProviderCards({ snapshot }: { snapshot: Snapshot }) {
                 </details>
                 <div className="flex items-center gap-1 shrink-0">
                   <Clock className="w-3 h-3 text-muted-foreground" />
-                  <span className="font-data text-[10px] text-muted-foreground whitespace-nowrap">
+                  <span className="font-data text-xs text-muted-foreground whitespace-nowrap">
                     {source.lastSuccessAt ? (
                       <time
                         dateTime={source.lastSuccessAt}

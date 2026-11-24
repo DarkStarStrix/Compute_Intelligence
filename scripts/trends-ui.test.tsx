@@ -153,3 +153,46 @@ it("filters current and past listings by movement inside the selected period", a
     await act(() => root.unmount());
   }
 });
+
+it("offers a recovery action when the selected time window has no samples", async () => {
+  const at = new Date(Date.now() - 10 * 24 * 3600000).toISOString();
+  const offer = parseRunpod(fixture, at)[0];
+  const snapshot = await collect(
+    null,
+    [
+      {
+        id: "runpod",
+        name: "RunPod",
+        configured: true,
+        connected: true,
+        fetch: async () => ({ offers: [offer] }),
+      },
+    ],
+    at
+  );
+  snapshot.history.push({
+    ...snapshot.history[0],
+    observedAt: new Date(Date.parse(at) - 60000).toISOString(),
+  });
+  const host = document.createElement("div");
+  const root = createRoot(host);
+  try {
+    await act(() =>
+      root.render(
+        <PriceTrends snapshot={snapshot} initialOfferId={offer.offerId} />
+      )
+    );
+    expect(host.textContent).toContain("No recorded samples in this range.");
+    const recover = [...host.querySelectorAll("button")].find(
+      button => button.textContent === "Show latest recorded history"
+    )!;
+    expect(recover).toBeDefined();
+    await act(() => recover.click());
+    expect(host.textContent).toContain("Unchanged in this range");
+    expect(host.textContent).not.toContain(
+      "No recorded samples in this range."
+    );
+  } finally {
+    await act(() => root.unmount());
+  }
+});

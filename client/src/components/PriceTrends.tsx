@@ -209,8 +209,8 @@ function PoolMovement({ snapshot: catalog }: { snapshot: Snapshot }) {
     ? Math.max(...normalizedValues)
     : 105;
   return (
-    <div className="bg-card border border-border rounded-xl p-5 mt-6 shadow-[var(--shadow-sm)]">
-      <div className="flex justify-between items-center gap-4 mb-4">
+    <div className="bg-card border border-border rounded-xl p-5 mt-6 ">
+      <div className="flex flex-wrap justify-between items-start gap-4 mb-4">
         <div>
           <h3 className="font-semibold">Provider movement timeline</h3>
           <p className="text-sm text-muted-foreground mt-1">
@@ -221,7 +221,7 @@ function PoolMovement({ snapshot: catalog }: { snapshot: Snapshot }) {
         <div className="flex flex-wrap gap-2 justify-end">
           <select
             aria-label="Timeline provider"
-            className="bg-card border border-border rounded-md p-2 text-xs"
+            className="dashboard-control"
             value={provider}
             disabled={allProviders}
             onChange={e => setProvider(e.target.value)}
@@ -232,7 +232,7 @@ function PoolMovement({ snapshot: catalog }: { snapshot: Snapshot }) {
               </option>
             ))}
           </select>
-          <label className="inline-flex items-center gap-2 rounded border border-border bg-background px-2 py-1.5 text-xs">
+          <label className="dashboard-control dashboard-toggle">
             <input
               type="checkbox"
               className="accent-teal"

@@ -1,3 +1,4 @@
+import { ProviderReferral } from "./ProviderReferral";
 import { providerLogo } from "@/lib/data";
 import { X, ExternalLink } from "lucide-react";
 import { listingUnit, type Listing, type Snapshot } from "@shared/catalog";
@@ -139,7 +140,7 @@ export function ComparisonDrawer({
           </p>
         )}
         {mixed && (
-          <p className="mb-4 p-3 bg-amber-50 text-amber-900 border border-amber-200 rounded text-xs">
+          <p className="mb-4 p-3 bg-amber-50 text-amber-900 border border-amber-200 dark:bg-amber-500/10 dark:text-amber-200 dark:border-amber-500/30 rounded text-xs">
             This selection mixes {kind ? "configurations" : "GPU models"} or
             billing types. Check both when comparing rates.
           </p>
@@ -264,6 +265,7 @@ export function ComparisonDrawer({
                     >
                       Open provider <ExternalLink size={12} />
                     </a>
+                    <ProviderReferral providerId={o.providerId} />
                   </td>
                 ))}
               </tr>

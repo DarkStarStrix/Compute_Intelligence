@@ -40,7 +40,6 @@ export function MarketPulse() {
             : "Awaiting a fresh stock report"
         }
         missing={offers.length === 0}
-        accent="teal"
       />
       <MetricCard
         icon={<Server className="w-4 h-4" />}
@@ -48,7 +47,6 @@ export function MarketPulse() {
         value={metrics.providers}
         suffix=""
         subtext="tracked cloud platforms"
-        accent="navy"
       />
       <MetricCard
         icon={<TrendingDown className="w-4 h-4" />}
@@ -60,7 +58,6 @@ export function MarketPulse() {
         decimals={2}
         subtext="On-demand · USD / GPU-hour"
         missing={metrics.lowestH100 === null}
-        accent="sage"
       />
       <MetricCard
         icon={<Cpu className="w-4 h-4" />}
@@ -68,7 +65,6 @@ export function MarketPulse() {
         value={metrics.gpuModels}
         suffix=""
         subtext="tracked configurations"
-        accent="coral"
       />
     </div>
   );
@@ -81,7 +77,6 @@ function MetricCard({
   suffix = "",
   prefix = "",
   subtext,
-  accent,
   divisor = 1,
   decimals = 0,
   missing = false,
@@ -92,7 +87,6 @@ function MetricCard({
   suffix?: string;
   prefix?: string;
   subtext: string;
-  accent: string;
   missing?: boolean;
   divisor?: number;
   decimals?: number;
@@ -100,58 +94,11 @@ function MetricCard({
   const displayValue =
     decimals > 0 ? (value / divisor).toFixed(decimals) : value.toString();
 
-  const accentMap: Record<
-    string,
-    { bg: string; iconBg: string; iconColor: string; glow: string; bar: string }
-  > = {
-    teal: {
-      bg: "bg-card",
-      iconBg: "bg-teal-subtle",
-      iconColor: "text-teal",
-      glow: "hover:shadow-teal",
-      bar: "bg-[oklch(0.62_0.19_218)]",
-    },
-    navy: {
-      bg: "bg-card",
-      iconBg: "bg-navy-subtle",
-      iconColor: "text-navy",
-      glow: "hover:shadow-[0_4px_20px_oklch(0.22_0.045_255_/_0.12)]",
-      bar: "bg-[oklch(0.22_0.045_255)]",
-    },
-    sage: {
-      bg: "bg-card",
-      iconBg: "bg-sage-subtle",
-      iconColor: "text-sage",
-      glow: "hover:shadow-[0_4px_20px_oklch(0.60_0.18_155_/_0.18)]",
-      bar: "bg-[oklch(0.60_0.18_155)]",
-    },
-    coral: {
-      bg: "bg-card",
-      iconBg: "bg-coral-subtle",
-      iconColor: "text-coral",
-      glow: "hover:shadow-coral",
-      bar: "bg-[oklch(0.68_0.18_45)]",
-    },
-  };
-
-  const s = accentMap[accent] ?? accentMap.teal;
-
   return (
-    <div
-      className={`relative overflow-hidden ${s.bg} border border-border rounded-lg px-5 py-4 transition-all duration-300 ${s.glow}`}
-    >
-      {/* Top accent bar */}
-      <div
-        className={`absolute top-0 left-0 right-0 h-[2px] ${s.bar} opacity-60`}
-      />
-
-      <div className="flex items-center gap-2 mb-3">
-        <div
-          className={`w-7 h-7 rounded-md flex items-center justify-center ${s.iconBg}`}
-        >
-          <span className={s.iconColor}>{icon}</span>
-        </div>
-        <span className="mono-label text-muted-foreground">{label}</span>
+    <div className="bg-card border border-border rounded-xl px-5 py-4">
+      <div className="flex items-center gap-2 mb-3 text-muted-foreground">
+        <span aria-hidden="true">{icon}</span>
+        <span className="text-sm">{label}</span>
       </div>
 
       <div className="flex items-baseline gap-0.5">
@@ -160,7 +107,7 @@ function MetricCard({
             {prefix}
           </span>
         )}
-        <span className="font-data text-3xl font-semibold text-foreground tracking-tight counter-animate">
+        <span className="font-data text-3xl font-semibold text-foreground tracking-tight">
           {missing ? "—" : displayValue}
         </span>
         {suffix && (
@@ -171,9 +118,7 @@ function MetricCard({
       </div>
 
       {subtext && (
-        <p className="font-data text-[11px] text-muted-foreground mt-1">
-          {subtext}
-        </p>
+        <p className="text-xs text-muted-foreground mt-2">{subtext}</p>
       )}
     </div>
   );

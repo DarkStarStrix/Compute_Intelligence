@@ -133,7 +133,7 @@ it("cancels saved-alert dismissal after the modal unmounts", async () => {
     )
   );
   const button = Array.from(document.querySelectorAll("button")).find(b =>
-    b.textContent?.includes("Set Alert")
+    b.textContent?.includes("Save highlight")
   )!;
   await act(() => button.click());
   expect(save).toHaveBeenCalledWith("h100", 2.7);
@@ -158,7 +158,7 @@ it("keeps the alert dialog open and reports an unsuccessful save", async () => {
     )
   );
   const button = Array.from(document.querySelectorAll("button")).find(b =>
-    b.textContent?.includes("Set Alert")
+    b.textContent?.includes("Save highlight")
   )!;
   await act(() => button.click());
   expect(document.querySelector('[role="alert"]')?.textContent).toContain(

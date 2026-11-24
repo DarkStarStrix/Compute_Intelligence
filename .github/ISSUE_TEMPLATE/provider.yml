@@ -1,0 +1,63 @@
+name: Add or update a compute provider
+description: Propose a provider, supply official pricing sources, or coordinate an integration.
+title: "Provider: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        GPU, CPU, TPU, and sandbox providers are welcome. Listing does not require payment, sponsorship, or referral enrollment.
+        Ready to submit? See [data-only provider intake](https://github.com/DarkStarStrix/gpu-price-tracker/blob/main/provider-submissions/README.md) and the provider PR template. Do not edit collector code; maintainers integrate sources separately.
+        This issue is public. Do not include tokens, private account responses, confidential commercial terms, or personal contact details.
+  - type: input
+    id: provider
+    attributes:
+      label: Provider name and official website
+      placeholder: Provider name — https://…
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Compute types
+      multiple: true
+      options:
+        - GPU
+        - CPU
+        - TPU
+        - Sandbox
+    validations:
+      required: true
+  - type: textarea
+    id: sources
+    attributes:
+      label: Official pricing and product sources
+      description: Link first-party pricing/API documentation and a useful human-facing product page. Note if authentication is required; do not share credentials.
+    validations:
+      required: true
+  - type: textarea
+    id: pricing
+    attributes:
+      label: Pricing and configuration
+      description: Currency, billing unit, node/GPU count or resources, regions, spot/on-demand models, minimum rental, and any fees or plan requirements. Mark anything unknown.
+    validations:
+      required: true
+  - type: textarea
+    id: stock
+    attributes:
+      label: Availability and collection
+      description: Does the source report real stock? Include field meanings, rate limits, pagination, timestamps, and collection terms if known. Pricing alone does not establish stock.
+  - type: dropdown
+    id: relationship
+    attributes:
+      label: Your relationship to the provider
+      options:
+        - Independent contributor or user
+        - Provider employee or representative
+        - Other relationship (explain below)
+    validations:
+      required: true
+  - type: textarea
+    id: contribution
+    attributes:
+      label: Contribution plan and additional context
+      description: Are you opening a PR, looking for implementation help, or correcting an existing integration? Link any related work and explain other relationships here.

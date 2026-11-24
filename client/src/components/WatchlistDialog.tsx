@@ -87,6 +87,8 @@ export function WatchlistDialog({
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
+  const [attempt, setAttempt] = useState(0);
+  const [loading, setLoading] = useState(false);
   const supported =
     "Notification" in window &&
     "serviceWorker" in navigator &&
@@ -95,6 +97,8 @@ export function WatchlistDialog({
   useEffect(() => {
     if (!API || !supported) return;
     let active = true;
+    setLoading(true);
+    setError("");
     const load = async () => {
       try {
         const token = localStorage.getItem(TOKEN_KEY);
@@ -118,24 +122,31 @@ export function WatchlistDialog({
       } catch {
         if (active)
           setError(
-            "Could not load background notifications. Reopen the watchlist to try again."
+            "Could not load background notifications. Your saved watches have not been changed."
           );
+      } finally {
+        if (active) setLoading(false);
       }
     };
     void load();
     return () => {
       active = false;
     };
-  }, [offer?.offerId, supported]);
+  }, [offer?.offerId, supported, attempt]);
 
   async function change(
     update: (current: readonly Watch[]) => Watch[],
     enable: boolean
   ) {
+    if (busy || loading) return;
     setBusy(true);
     setError("");
     setStatus("");
     try {
+      if (enable && Notification.permission === "denied")
+        throw new Error(
+          "Notifications are blocked for this site. Allow them in your browser site settings, then try again."
+        );
       if (enable && (await Notification.requestPermission()) !== "granted")
         throw new Error(
           "Allow notifications in your browser to save this watch."
@@ -230,9 +241,16 @@ export function WatchlistDialog({
           </button>
         </div>
         {!API ? (
-          <p className="text-sm text-muted-foreground">
-            Background notifications are currently unavailable.
-          </p>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Background notifications are unavailable in this preview. You can
+              still use the bell action on an offer to save a local price
+              highlight.
+            </p>
+            <button type="button" className="offer-button" onClick={onClose}>
+              Back to offers
+            </button>
+          </div>
         ) : !supported ? (
           <p className="text-sm text-muted-foreground">
             This browser does not support background notifications.
@@ -246,6 +264,7 @@ export function WatchlistDialog({
             {listing && (
               <form
                 className="space-y-3 rounded-lg border border-border p-3"
+                aria-busy={busy || loading}
                 onSubmit={event => {
                   event.preventDefault();
                   const result = watchSchema.safeParse({
@@ -273,6 +292,8 @@ export function WatchlistDialog({
                   Target USD / {listingUnit(kind)}
                   <input
                     type="number"
+                    inputMode="decimal"
+                    disabled={busy || loading}
                     min="0"
                     step="any"
                     value={target}
@@ -285,6 +306,7 @@ export function WatchlistDialog({
                     <input
                       type="checkbox"
                       className="accent-teal"
+                      disabled={busy || loading}
                       checked={restock}
                       onChange={event => setRestock(event.target.checked)}
                     />
@@ -298,9 +320,9 @@ export function WatchlistDialog({
                 <button
                   type="submit"
                   className="offer-button offer-button--primary"
-                  disabled={!publicKey || busy}
+                  disabled={!publicKey || busy || loading}
                 >
-                  Save watch
+                  {busy ? "Saving…" : "Save watch"}
                 </button>
               </form>
             )}
@@ -326,7 +348,7 @@ export function WatchlistDialog({
                     <button
                       type="button"
                       className="offer-text-button shrink-0"
-                      disabled={!publicKey || busy}
+                      disabled={!publicKey || busy || loading}
                       aria-label={`Remove watch for ${watch.label}`}
                       onClick={() =>
                         void change(
@@ -344,18 +366,32 @@ export function WatchlistDialog({
             ) : (
               !listing && (
                 <p className="text-sm text-muted-foreground">
-                  {publicKey
-                    ? "Choose a listing in Offers to add a watch."
-                    : "Checking notification service…"}
+                  {loading
+                    ? "Checking notification service…"
+                    : publicKey
+                      ? "Choose a listing in Offers to add a watch."
+                      : "Your watchlist could not be loaded."}
                 </p>
               )
             )}
           </>
         )}
         {error && (
-          <p role="alert" className="text-xs text-destructive">
-            {error}
-          </p>
+          <div className="space-y-2">
+            <p role="alert" className="text-xs text-destructive">
+              {error}
+            </p>
+            {API && supported && !busy && (
+              <button
+                type="button"
+                className="offer-button"
+                disabled={loading}
+                onClick={() => setAttempt(value => value + 1)}
+              >
+                {loading ? "Retrying…" : "Retry connection"}
+              </button>
+            )}
+          </div>
         )}
         {status && (
           <p role="status" className="text-xs text-teal">

@@ -30,9 +30,31 @@ export function Modal({
       if (event.key !== "Tab") return;
       const controls = [
         ...panel.current!.querySelectorAll<HTMLElement>(
-          'button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),[tabindex="0"]'
+          'button:not([disabled]),a[href],input:not([disabled]):not([type="hidden"]),select:not([disabled]),textarea:not([disabled]),summary,[tabindex="0"]'
         ),
-      ];
+      ].filter(element => {
+        if (
+          element.tabIndex < 0 ||
+          element.closest('[hidden], [inert], [aria-hidden="true"]')
+        )
+          return false;
+        for (
+          let ancestor: HTMLElement | null = element;
+          ancestor && ancestor !== panel.current;
+          ancestor = ancestor.parentElement
+        ) {
+          const style = getComputedStyle(ancestor);
+          if (style.display === "none" || style.visibility === "hidden")
+            return false;
+          if (
+            ancestor instanceof HTMLDetailsElement &&
+            !ancestor.open &&
+            !ancestor.querySelector("summary")?.contains(element)
+          )
+            return false;
+        }
+        return true;
+      });
       const first = controls[0],
         last = controls.at(-1);
       if (!first) {
@@ -64,7 +86,7 @@ export function Modal({
   }, []);
   return createPortal(
     <div
-      className="fixed inset-0 z-[200] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+      className="fixed inset-0 z-[200] bg-black/50 flex items-center justify-center p-4"
       onMouseDown={e => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -75,7 +97,7 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className={`bg-card border border-border rounded-xl shadow-2xl w-full ${wide ? "max-w-5xl" : "max-w-sm"} max-h-[90vh] overflow-y-auto outline-none`}
+        className={`bg-card border border-border rounded-xl shadow-2xl w-full ${wide ? "max-w-5xl" : "max-w-sm"} max-h-[90vh] overflow-y-auto overscroll-contain outline-none`}
       >
         {children}
       </div>

@@ -1,0 +1,35 @@
+name: Provider intake
+
+# Run trusted base-branch code only. PR content is read as data, never checked out or executed.
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.4.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Read and validate submission without executing PR code
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          git fetch --no-tags origin "$HEAD_SHA"
+          pnpm exec tsx scripts/check-provider-submissions.ts "$BASE_SHA" "$HEAD_SHA"

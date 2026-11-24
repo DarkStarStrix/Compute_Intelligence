@@ -40,11 +40,10 @@ export function QuickComparison({
   return (
     <section className="mb-10">
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {comparisons.map((row, idx) => (
+        {comparisons.map(row => (
           <ComparisonCard
             key={row.gpuModelId}
             row={row}
-            index={idx}
             isExpanded={expandedGpu === row.gpuModelId}
             onBrowseOffers={
               onBrowseOffers ? () => onBrowseOffers(row.gpuModelId) : undefined
@@ -63,25 +62,17 @@ export function QuickComparison({
 
 function ComparisonCard({
   row,
-  index,
   isExpanded,
   onToggle,
   onBrowseOffers,
 }: {
   row: ComparisonRow;
-  index: number;
   isExpanded: boolean;
   onToggle: () => void;
   onBrowseOffers?: () => void;
 }) {
   return (
-    <div
-      className="elevated-card rounded-xl overflow-hidden animate-fade-up"
-      style={{ animationDelay: `${index * 60}ms` }}
-    >
-      {/* Top accent line — teal gradient */}
-      <div className="h-[2px] bg-gradient-to-r from-[oklch(0.62_0.19_218)] via-[oklch(0.62_0.19_218_/_0.5)] to-transparent" />
-
+    <div className="elevated-card rounded-xl overflow-hidden">
       {/* Header */}
       <div className="px-5 py-4 flex items-start justify-between">
         <div className="flex items-center gap-3">
@@ -90,20 +81,20 @@ function ComparisonCard({
             <span className="font-data text-xs font-semibold text-muted-foreground leading-none">
               {row.vramGb || "—"}
             </span>
-            <span className="font-data text-[8px] text-muted-foreground leading-none mt-0.5">
+            <span className="font-data text-xs text-muted-foreground leading-none mt-0.5">
               GB
             </span>
           </div>
           <div>
-            <h3 className="font-bold text-base text-foreground tracking-tight">
+            <h3 className="font-semibold text-base text-foreground tracking-tight">
               {row.gpuModelName}
             </h3>
             <div className="flex items-center gap-1.5 mt-0.5">
-              <span className="font-data text-[10px] text-muted-foreground">
+              <span className="font-data text-xs text-muted-foreground">
                 {row.vramGb || "—"}GB VRAM
               </span>
               <span className="text-border">·</span>
-              <span className="font-data text-[10px] text-muted-foreground">
+              <span className="font-data text-xs text-muted-foreground">
                 {row.providers.length} providers
               </span>
             </div>
@@ -114,18 +105,18 @@ function ComparisonCard({
         <div className="text-right">
           <div className="flex items-center gap-1 justify-end">
             <TrendingDown className="w-3 h-3 text-[oklch(0.60_0.18_155)]" />
-            <span className="font-data text-xl font-bold text-foreground tracking-tight">
+            <span className="font-data text-xl font-semibold text-foreground tracking-tight">
               {formatPrice(row.lowestOverall)}
             </span>
           </div>
-          <span className="font-data text-[10px] text-muted-foreground">
+          <span className="font-data text-xs text-muted-foreground">
             {row.providers[0]?.retained ? "Last observed · /GPU/hr" : "/GPU/hr"}
           </span>
         </div>
       </div>
 
       {/* Divider */}
-      <div className="mx-5 h-px bg-gradient-to-r from-border via-border/50 to-transparent" />
+      <div className="mx-5 h-px bg-border" />
 
       {/* Provider rows */}
       <div className="px-5 py-3 space-y-0">
@@ -139,7 +130,7 @@ function ComparisonCard({
               }`}
             >
               <div className="flex items-center gap-2.5">
-                <span className="font-data text-[10px] text-muted-foreground w-4 text-right">
+                <span className="font-data text-xs text-muted-foreground w-4 text-right">
                   {i + 1}
                 </span>
                 <span
@@ -155,7 +146,7 @@ function ComparisonCard({
                 </span>
                 {p.retained && (
                   <span
-                    className="text-[9px] text-amber-700 dark:text-amber-300"
+                    className="text-xs text-amber-700 dark:text-amber-300"
                     title={`Observed ${new Date(p.observedAt).toLocaleString()}`}
                   >
                     Last observed ·{" "}
@@ -197,7 +188,7 @@ function ComparisonCard({
             type="button"
             onClick={onBrowseOffers}
             aria-label={`View ${row.gpuModelName} offers`}
-            className="inline-flex items-center gap-1 text-sm font-medium text-[#075b75] hover:underline"
+            className="inline-flex items-center gap-1 text-sm font-medium text-teal hover:underline"
           >
             View offers <ArrowRight size={14} />
           </button>
@@ -205,7 +196,7 @@ function ComparisonCard({
         {row.providers.length > 3 && (
           <button
             onClick={onToggle}
-            className="flex items-center gap-1 text-[11px] text-teal hover:text-teal transition-colors ml-auto"
+            className="flex items-center gap-1 text-xs text-teal hover:text-teal transition-colors ml-auto"
           >
             {isExpanded ? (
               <>

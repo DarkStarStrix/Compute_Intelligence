@@ -1,11 +1,5 @@
-/*
-  Home — GPU Price Tracker Dashboard v2
-  Design: "Data Observatory" — Scientific Instrument Panel, Premium Edition
-  Key upgrades: animated hero, sticky navigation, scan-line effect,
-  staggered section entrances, blueprint illustration integration
-*/
-
 import { lazy, startTransition, Suspense, useState, useEffect } from "react";
+import { activeSponsors, publicUrl } from "@/config/support";
 import { LiveH100 } from "@/components/LiveH100";
 import { MarketPulse } from "@/components/MarketPulse";
 import { QuickComparison } from "@/components/QuickComparison";
@@ -51,6 +45,12 @@ const ProviderCards = lazy(() =>
   }))
 );
 
+const SupportDialog = lazy(() =>
+  import("@/components/SupportDialog").then(module => ({
+    default: module.SupportDialog,
+  }))
+);
+
 type Tab = "overview" | "offers" | "providers" | "trends";
 
 const TABS: { id: Tab; label: string }[] = [
@@ -61,6 +61,8 @@ const TABS: { id: Tab; label: string }[] = [
 ];
 
 export default function Home() {
+  const [supportOpen, setSupportOpen] = useState(false);
+  const sponsors = activeSponsors();
   const [sharedView, setSharedView] = useState(() =>
     readViewLink(window.location.search)
   );
@@ -81,6 +83,8 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>(
     sharedView?.view ?? "overview"
   );
+  const [offerRequest, setOfferRequest] = useState(0);
+  const [offersVisited, setOffersVisited] = useState(activeTab === "offers");
   const generatedAt = catalog.generatedAt;
   const offers = catalog.offers;
   const freshOffers = offers.filter(o => isCurrent(catalog, o));
@@ -102,12 +106,7 @@ export default function Home() {
       : "—";
   };
 
-  function navigate(
-    tab: Tab,
-    gpu = "",
-    kind: ListingKind = "gpu",
-    provider = ""
-  ) {
+  function navigate(tab: Tab, gpu = "", kind?: ListingKind, provider = "") {
     if (tab === activeTab) return;
     if (sharedView) {
       const url = new URL(window.location.href);
@@ -116,10 +115,15 @@ export default function Home() {
       setSharedView(undefined);
     }
     if (tab === "offers") {
+      setOffersVisited(true);
       startTransition(() => {
-        setInitialGpu(gpu);
-        setOfferKind(kind);
-        setProviderSelection({ id: provider, kind });
+        if (gpu || provider || kind) {
+          const selectedKind = kind ?? "gpu";
+          setInitialGpu(gpu);
+          setOfferKind(selectedKind);
+          setProviderSelection({ id: provider, kind: selectedKind });
+          setOfferRequest(value => value + 1);
+        }
         setActiveTab(tab);
       });
     } else setActiveTab(tab);
@@ -156,14 +160,17 @@ export default function Home() {
 
   return (
     <div className="min-h-screen dashboard-surface">
+      <a className="skip-link" href="#main-content">
+        Skip to content
+      </a>
       {/* ── Navigation ──────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-50 h-[60px] border-b border-border bg-card">
         <div className="container flex items-center justify-between gap-2 h-full">
           <button
             type="button"
             onClick={() => navigate("overview")}
-            aria-label="GPU Price Tracker home"
-            className="flex shrink-0 items-center gap-2.5 rounded-lg text-left"
+            aria-label="Compute Intelligence home"
+            className="flex min-w-0 items-center gap-2.5 rounded-lg text-left"
           >
             <span
               className="header-brand-mark grid size-9 place-items-center rounded-xl"
@@ -173,9 +180,9 @@ export default function Home() {
             </span>
             <span className="min-w-0">
               <span className="block text-sm font-bold leading-tight tracking-tight">
-                GPU Price Tracker
+                Compute Intelligence
               </span>
-              <span className="hidden sm:block mt-0.5 text-[10px] font-data text-muted-foreground">
+              <span className="hidden sm:block mt-0.5 text-xs text-muted-foreground">
                 Compute price observatory
               </span>
             </span>
@@ -184,7 +191,7 @@ export default function Home() {
           {/* Tab navigation — desktop */}
           <nav
             aria-label="Dashboard"
-            className="hidden lg:flex items-center gap-0.5"
+            className="dashboard-nav hidden lg:flex items-center gap-0.5"
           >
             {TABS.map(tab => (
               <button
@@ -200,9 +207,6 @@ export default function Home() {
                 }`}
               >
                 {tab.label}
-                {activeTab === tab.id && (
-                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[oklch(0.62_0.19_218)]" />
-                )}
               </button>
             ))}
           </nav>
@@ -211,7 +215,7 @@ export default function Home() {
             <time
               dateTime={generatedAt}
               title={`Snapshot published ${snapshotTime.toLocaleString()}`}
-              className="hidden xl:inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1.5 font-data text-[10px] text-muted-foreground"
+              className="hidden xl:inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1.5 font-data text-xs text-muted-foreground"
             >
               <span
                 aria-hidden="true"
@@ -249,14 +253,14 @@ export default function Home() {
             >
               {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
             </button>
-            <a
-              href="https://github.com/DarkStarStrix/gpu-price-tracker"
-              aria-label="GitHub repository"
-              title="GitHub repository"
-              className="header-control"
+            <button
+              type="button"
+              aria-haspopup="dialog"
+              onClick={() => setSupportOpen(true)}
+              className="support-entry rounded-md px-2 py-2 text-sm font-medium text-teal hover:bg-muted"
             >
-              <Github className="size-4" />
-            </a>
+              Support
+            </button>
           </div>
         </div>
       </header>
@@ -264,7 +268,7 @@ export default function Home() {
       {/* ── Mobile tab bar ──────────────────────────────────────────────── */}
       <nav
         aria-label="Dashboard"
-        className="lg:hidden sticky top-[60px] z-40 bg-background border-b border-border px-4 py-2 flex gap-1 overflow-x-auto overscroll-x-contain"
+        className="dashboard-nav lg:hidden sticky top-[60px] z-40 bg-background border-b border-border px-4 py-2 flex gap-1 overflow-x-auto overscroll-x-contain"
       >
         {TABS.map(tab => (
           <button
@@ -273,7 +277,7 @@ export default function Home() {
             onPointerEnter={tab.id === "offers" ? warmOffers : undefined}
             onFocus={tab.id === "offers" ? warmOffers : undefined}
             aria-current={activeTab === tab.id ? "page" : undefined}
-            className={`px-3 py-1.5 text-xs rounded-md whitespace-nowrap transition-all duration-200 ${
+            className={`px-3 py-1.5 text-xs rounded-md whitespace-nowrap transition-colors duration-200 ${
               activeTab === tab.id
                 ? "bg-muted text-foreground font-semibold"
                 : "text-muted-foreground hover:text-foreground"
@@ -330,35 +334,29 @@ export default function Home() {
         <section className="observatory-hero overflow-hidden border-b border-border">
           <div className="container grid items-center gap-6 py-12 md:grid-cols-[minmax(0,1fr)_minmax(0,0.92fr)] md:py-18">
             <div className="max-w-xl">
-              {/* Eyebrow */}
-              <div className="mb-5 flex flex-wrap items-center gap-2">
-                <span className="mono-label text-teal">
-                  Market Intelligence
-                </span>
-                <span className="w-8 h-px bg-[oklch(0.62_0.19_218_/_0.4)]" />
-                <span className="mono-label text-muted-foreground">
-                  {providers.length} Providers · {offerCount} Offers
-                </span>
-              </div>
-
               {/* Headline */}
-              <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground leading-[1.1] text-balance">
-                GPU Compute
+              <h1 className="text-4xl md:text-[3.5rem] font-medium tracking-tight text-foreground leading-[1.08] text-balance">
+                Compute
                 <br />
-                <span className="gradient-text-teal">Price Observatory</span>
+                <span className="hero-accent">Intelligence</span>
               </h1>
 
-              <p className="mt-4 text-base text-muted-foreground leading-relaxed max-w-md">
+              <p className="mt-5 text-lg text-muted-foreground leading-relaxed max-w-md">
                 Compare GPU, CPU, TPU, and sandbox pricing from official
                 provider sources. Explore hourly rates, cloud tiers, and
-                reported availability — with a source and observation time for
+                reported availability, with a source and observation time for
                 every offer.
+              </p>
+
+              <p className="mt-3 text-sm text-muted-foreground font-data">
+                {providers.length} Providers · {offerCount.toLocaleString()}{" "}
+                Offers
               </p>
 
               <LiveH100 />
 
               {/* CTA row */}
-              <div className="mt-7 flex items-center gap-3">
+              <div className="mt-6 flex flex-wrap items-center gap-3">
                 <button
                   onClick={() => navigate("offers")}
                   onPointerEnter={warmOffers}
@@ -370,12 +368,24 @@ export default function Home() {
                 </button>
                 <button
                   onClick={() => navigate("trends")}
-                  className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium border border-border text-foreground rounded-lg hover:bg-card hover:border-[oklch(0.82_0.012_85)] transition-all duration-200"
+                  className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium border border-border text-foreground rounded-lg hover:bg-card hover:border-[oklch(0.82_0.012_85)] transition-colors duration-200"
                 >
                   Price Trends
                   <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
                 </button>
               </div>
+
+              <p className="mt-4 text-xs text-muted-foreground leading-relaxed">
+                Free and open source. Optional support funds ongoing
+                development.{" "}
+                <button
+                  type="button"
+                  className="text-teal underline underline-offset-2"
+                  onClick={() => setSupportOpen(true)}
+                >
+                  Support the project
+                </button>
+              </p>
 
               {/* Inline stats row */}
               <div className="mt-8 flex items-center gap-6">
@@ -384,7 +394,7 @@ export default function Home() {
                   { label: "RTX 4090 floor", value: floor("rtx-4090") },
                 ].map(stat => (
                   <div key={stat.label} className="flex flex-col">
-                    <span className="font-data text-base font-semibold text-foreground">
+                    <span className="font-data text-sm font-medium text-foreground">
                       {stat.value}
                     </span>
                     <span className="mono-label text-muted-foreground">
@@ -448,6 +458,8 @@ export default function Home() {
 
       {/* ── Main Content ────────────────────────────────────────────────── */}
       <main
+        id="main-content"
+        tabIndex={-1}
         className={`container ${activeTab === "offers" ? "py-5" : "py-10"}`}
       >
         {activeTab === "overview" && (
@@ -463,9 +475,36 @@ export default function Home() {
             </div>
             <QuickComparison onBrowseOffers={gpu => navigate("offers", gpu)} />
 
+            {sponsors.length > 0 && (
+              <aside
+                aria-label="Project sponsors"
+                className="mt-8 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground"
+              >
+                <span>Project sponsors · Paid acknowledgments</span>
+                {sponsors.slice(0, 3).map(sponsor => (
+                  <a
+                    key={sponsor.url}
+                    href={publicUrl(sponsor.url)}
+                    target="_blank"
+                    rel="sponsored noopener noreferrer"
+                    className="text-teal underline"
+                  >
+                    {sponsor.name} ↗
+                  </a>
+                ))}
+                <button
+                  type="button"
+                  className="text-teal underline"
+                  onClick={() => setSupportOpen(true)}
+                >
+                  Sponsorship details
+                </button>
+              </aside>
+            )}
+
             {/* Interstitial — blueprint + methodology */}
             <div className="my-12 grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-8 items-center py-8 border-y border-border/60">
-              <div className="animate-fade-up delay-60">
+              <div>
                 <div className="mono-label text-teal mb-3">Methodology</div>
                 <h3 className="text-xl font-semibold text-foreground mb-3">
                   How We Track Prices
@@ -478,21 +517,8 @@ export default function Home() {
                   provider hourly spot prices. Pool turnover counts listing
                   changes. Failed refreshes retain their original timestamps.
                 </p>
-                <div className="mt-4 flex flex-wrap gap-3">
-                  {catalog.sources
-                    .filter(s => s.status === "ok")
-                    .map(s => s.name + (s.evidence ? " pricing" : " API"))
-                    .map(src => (
-                      <span
-                        key={src}
-                        className="category-badge bg-muted text-muted-foreground"
-                      >
-                        {src}
-                      </span>
-                    ))}
-                </div>
               </div>
-              <div className="hidden lg:block w-56 h-56 relative animate-fade-in delay-120">
+              <div className="hidden lg:block w-56 h-56 relative">
                 <img
                   src={GPU_DIAGRAM}
                   alt="GPU node cluster diagram"
@@ -507,8 +533,8 @@ export default function Home() {
           </div>
         )}
 
-        {activeTab === "offers" && (
-          <>
+        {offersVisited && (
+          <div hidden={activeTab !== "offers"}>
             <div
               role="group"
               aria-label="Offer compute type"
@@ -531,6 +557,7 @@ export default function Home() {
             <div hidden={offerKind !== "gpu"}>
               <Suspense fallback={<p role="status">Loading offers…</p>}>
                 <OffersTable
+                  key={offerRequest}
                   initialGpu={initialGpu}
                   initialProvider={
                     providerSelection.kind === "gpu" ? providerSelection.id : ""
@@ -570,11 +597,11 @@ export default function Home() {
                 />
               </Suspense>
             )}
-          </>
+          </div>
         )}
 
         {activeTab === "providers" && (
-          <div className="animate-fade-up">
+          <div>
             {/* Provider constellation header */}
             <div className="relative mb-8 rounded-xl overflow-hidden border border-border">
               <img
@@ -617,7 +644,7 @@ export default function Home() {
         )}
 
         {activeTab === "trends" && (
-          <div className="animate-fade-up">
+          <div>
             <div className="flex items-baseline justify-between mb-5">
               <h2 className="text-2xl font-bold">Market history</h2>
               <span className="text-xs text-muted-foreground">
@@ -641,13 +668,28 @@ export default function Home() {
       </main>
 
       {/* ── Footer ──────────────────────────────────────────────────────── */}
+      {supportOpen && (
+        <Suspense
+          fallback={
+            <p
+              role="status"
+              className="fixed bottom-4 right-4 z-50 rounded-lg border border-border bg-card p-3 text-sm"
+            >
+              Opening support…
+            </p>
+          }
+        >
+          <SupportDialog onClose={() => setSupportOpen(false)} />
+        </Suspense>
+      )}
+
       <footer className="border-t border-border bg-secondary">
         <div className="container py-7 grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
             <div className="flex items-center gap-2 mb-2">
               <Activity className="w-3.5 h-3.5 text-teal" />
               <span className="text-sm font-semibold text-foreground">
-                GPU Price Tracker
+                Compute Intelligence
               </span>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed">
@@ -655,6 +697,23 @@ export default function Home() {
               source timestamps, and observed availability from connected
               providers.
             </p>
+            <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-teal">
+              <a
+                href="https://github.com/DarkStarStrix/gpu-price-tracker"
+                className="inline-flex items-center gap-1.5 underline"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Github size={14} /> GitHub repository
+              </a>
+              <button
+                type="button"
+                className="underline"
+                onClick={() => setSupportOpen(true)}
+              >
+                Support & sponsorship
+              </button>
+            </div>
           </div>
           <div>
             <div className="mono-label text-muted-foreground mb-2">
@@ -667,7 +726,7 @@ export default function Home() {
                 .map(p => (
                   <span
                     key={p}
-                    className="font-data text-[10px] px-2 py-0.5 bg-muted rounded text-foreground"
+                    className="font-data text-xs px-2 py-0.5 bg-muted rounded text-foreground"
                   >
                     {p}
                   </span>
@@ -702,7 +761,7 @@ export default function Home() {
         </div>
         <div className="container pb-4">
           <div className="section-rule mb-4" />
-          <p className="font-data text-[10px] text-muted-foreground text-center">
+          <p className="font-data text-xs text-muted-foreground text-center">
             Prices are indicative and may vary. Always verify directly with
             providers before committing to workloads.
           </p>

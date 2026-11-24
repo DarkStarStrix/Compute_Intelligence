@@ -103,3 +103,11 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for contracts, failure modes and release 
 3. Check both the build and deploy jobs in Actions; a local build alone does not publish the site.
 
 The workflow uses Node 22, a frozen pnpm lockfile, type checking, tests, collection and a Pages build. Only the build job can commit observations; only the deployment job receives Pages/OIDC write permissions. Collection needs no Actions secrets. Keep the committed snapshot and fixtures: they are data and parser evidence, not build output.
+
+## Optional project support
+
+Support, provider referrals, and sponsor acknowledgments are controlled by public settings in `client/src/config/support.ts`. See [support setup](docs/monetization.md). Payments are handled by an external Stripe Payment Link; the dashboard remains free to use. No payment secrets belong in this repository.
+
+## Add your provider or contribute
+
+GPU, CPU, TPU, and sandbox integrations are welcome. Start with [contribution instructions](CONTRIBUTING.md) and the [provider onboarding guide](docs/provider-onboarding.md), then submit one data-only JSON file using the provider PR template. Provider PRs do not change collector code; maintainers wire new sources in a separate reviewed integration. You can also [request a provider](https://github.com/DarkStarStrix/gpu-price-tracker/issues/new?template=provider.yml) with official pricing sources. Listing does not require sponsorship or referral enrollment.

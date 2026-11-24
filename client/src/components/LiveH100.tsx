@@ -15,12 +15,13 @@ export function LiveH100() {
   const stats = marketStats(points);
   return (
     <div
-      className="mt-6 p-4 bg-card/95 border border-border rounded-xl shadow-sm max-w-md"
+      className="mt-6 p-5 bg-card border border-border rounded-xl max-w-md"
       aria-label="Live H100 quote"
     >
       <div className="flex justify-between items-center gap-2">
         <span className="text-xs font-semibold flex items-center gap-2">
           <span
+            aria-hidden="true"
             className={`h-2 w-2 rounded-full ${snapshotLoadError || retained ? "bg-amber-500" : "bg-emerald-500"}`}
           />
           H100 SXM · {retained ? "Last observed" : "auto-updating"}
@@ -37,7 +38,7 @@ export function LiveH100() {
       </div>
       <div className="flex items-baseline gap-2 mt-3">
         <strong
-          className="font-data text-3xl tracking-tight"
+          className="font-data text-3xl font-medium tracking-tight"
           aria-live="polite"
         >
           {offer ? `$${offer.pricePerGpuHr.toFixed(3)}` : "—"}
@@ -54,6 +55,8 @@ export function LiveH100() {
             <img
               src={providerLogo(offer.providerId)}
               alt=""
+              width={16}
+              height={16}
               className="inline-block w-4 h-4 object-contain mx-1"
             />
             {offer.providerName}
@@ -63,11 +66,11 @@ export function LiveH100() {
               providerLink={offer.providerLink}
               state={retained ? "unknown" : offer.availability}
             />
-            <span className="text-[10px] text-muted-foreground">
+            <span className="text-xs text-muted-foreground">
               {billingLabel(offer)} · {cloudLabel(offer)}
             </span>
           </div>
-          <p className="text-[11px] text-muted-foreground mt-2">
+          <p className="text-xs text-muted-foreground mt-3 leading-relaxed">
             Observed {new Date(offer.observedAt).toLocaleString()} ·{" "}
             {snapshotRefreshing
               ? "Checking…"

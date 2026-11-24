@@ -4,7 +4,7 @@
 */
 
 import { Modal } from "./Modal";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useId } from "react";
 import { listingUnit, type ListingKind } from "@shared/catalog";
 import { hourlyPrice } from "@/lib/data";
 import { Bell, BellOff, X, Check } from "lucide-react";
@@ -17,7 +17,7 @@ interface Props {
   kind?: ListingKind;
   existingAlert: PriceAlert | undefined;
   onSave: (gpuModelId: string, targetPrice: number) => boolean | void;
-  onClear: (gpuModelId: string) => void;
+  onClear: (gpuModelId: string) => boolean | void;
   onClose: () => void;
 }
 
@@ -31,12 +31,13 @@ export function PriceAlertModal({
   onClear,
   onClose,
 }: Props) {
+  const fieldId = useId();
   const [value, setValue] = useState(
     existingAlert
       ? String(existingAlert.targetPrice)
       : String(Number((currentPrice * 0.9).toFixed(kind === "gpu" ? 2 : 6)))
   );
-  const [saveError, setSaveError] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const [saved, setSaved] = useState(false);
   const dismissTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined
@@ -55,23 +56,30 @@ export function PriceAlertModal({
   function handleSave() {
     if (!isValid || saved) return;
     if (onSave(gpuModelId, parsed) === false) {
-      setSaveError(true);
+      setSaveError(
+        "Could not save this alert. Browser storage may be blocked or full."
+      );
       return;
     }
-    setSaveError(false);
+    setSaveError("");
     setSaved(true);
     dismissTimer.current = setTimeout(onClose, 800);
   }
 
   function handleClear() {
-    onClear(gpuModelId);
+    if (onClear(gpuModelId) === false) {
+      setSaveError(
+        "Could not clear this alert. Browser storage may be blocked or full."
+      );
+      return;
+    }
     onClose();
   }
 
   return (
     <Modal titleId="price-alert-title" onClose={onClose}>
       <div
-        className="relative w-full max-w-sm bg-[var(--paper)] border border-border rounded-2xl shadow-[0_16px_60px_oklch(0.12_0.02_255_/_0.3)] animate-fade-up"
+        className="relative w-full bg-card"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -85,9 +93,9 @@ export function PriceAlertModal({
                 id="price-alert-title"
                 className="text-sm font-semibold text-foreground"
               >
-                Price Alert
+                Price highlight
               </div>
-              <div className="font-data text-[10px] text-muted-foreground">
+              <div className="font-data text-xs text-muted-foreground">
                 {gpuModelName}
               </div>
             </div>
@@ -95,7 +103,7 @@ export function PriceAlertModal({
           <button
             onClick={onClose}
             aria-label="Close price alert"
-            className="w-7 h-7 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-card transition-all duration-150"
+            className="w-9 h-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-card transition-colors duration-150"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -105,11 +113,14 @@ export function PriceAlertModal({
         <div className="px-5 py-5 space-y-4">
           <div>
             <div className="flex justify-between items-center mb-1.5">
-              <label className="mono-label text-muted-foreground">
-                Alert when price drops below
+              <label
+                htmlFor={fieldId}
+                className="mono-label text-muted-foreground"
+              >
+                Highlight at or below
               </label>
-              <span className="font-data text-[10px] text-muted-foreground">
-                Current:{" "}
+              <span className="font-data text-xs text-muted-foreground">
+                Observed:{" "}
                 <span className="text-foreground">
                   {hourlyPrice.format(currentPrice)} / {listingUnit(kind)}
                 </span>
@@ -120,27 +131,36 @@ export function PriceAlertModal({
                 $
               </span>
               <input
+                id={fieldId}
+                aria-invalid={!isValid}
+                aria-describedby={`${fieldId}-help${!isValid ? ` ${fieldId}-error` : ""}`}
                 ref={inputRef}
                 type="number"
                 step="any"
                 min="0"
                 value={value}
-                onChange={e => setValue(e.target.value)}
+                onChange={e => {
+                  setValue(e.target.value);
+                  setSaveError("");
+                }}
                 onKeyDown={e => {
                   if (e.key === "Enter") handleSave();
                 }}
-                className={`w-full pl-7 pr-12 py-2.5 text-sm font-data border rounded-lg bg-card text-foreground outline-none transition-all duration-200 ${
+                className={`w-full pl-7 pr-12 py-2.5 text-sm font-data border rounded-lg bg-card text-foreground transition-colors duration-200 ${
                   isValid
                     ? "border-border focus:border-[oklch(0.62_0.19_218)] focus:ring-1 focus:ring-[oklch(0.62_0.19_218_/_0.2)]"
                     : "border-[oklch(0.62_0.18_25)] focus:border-[oklch(0.62_0.18_25)]"
                 }`}
               />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 font-data text-[10px] text-muted-foreground">
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 font-data text-xs text-muted-foreground">
                 /hr
               </span>
             </div>
-            {!isValid && value !== "" && (
-              <p className="mt-1 text-[10px] text-[oklch(0.62_0.18_25)]">
+            {!isValid && (
+              <p
+                id={`${fieldId}-error`}
+                className="mt-1 text-xs text-destructive"
+              >
                 Enter a valid price greater than $0
               </p>
             )}
@@ -148,14 +168,14 @@ export function PriceAlertModal({
 
           {saveError && (
             <p role="alert" className="text-xs text-destructive">
-              Could not save this alert. Browser storage may be blocked or full.
+              {saveError}
             </p>
           )}
           {existingAlert && (
             <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[oklch(0.65_0.18_25_/_0.08)] border border-[oklch(0.65_0.18_25_/_0.2)]">
               <Bell className="w-3 h-3 text-[oklch(0.62_0.18_25)]" />
               <span className="text-xs text-[oklch(0.45_0.12_25)] dark:text-red-300">
-                Active alert at{" "}
+                Highlight saved at{" "}
                 <span className="font-data font-semibold">
                   {hourlyPrice.format(existingAlert.targetPrice)} /{" "}
                   {listingUnit(kind)}
@@ -164,9 +184,13 @@ export function PriceAlertModal({
             </div>
           )}
 
-          <p className="text-[11px] text-muted-foreground leading-relaxed">
-            Offers below this threshold will be highlighted with a coral glow in
-            the table. Alerts are stored locally in your browser.
+          <p
+            id={`${fieldId}-help`}
+            className="text-xs text-muted-foreground leading-relaxed"
+          >
+            Highlights matching offers while you browse. Saved in this browser;
+            this does not send notifications. Use the watchlist for background
+            alerts.
           </p>
         </div>
 
@@ -175,7 +199,7 @@ export function PriceAlertModal({
           <button
             onClick={handleSave}
             disabled={!isValid || saved}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium rounded-lg transition-colors duration-200 ${
               saved
                 ? "bg-[oklch(0.60_0.18_155)] text-white"
                 : isValid
@@ -189,19 +213,15 @@ export function PriceAlertModal({
               </>
             ) : (
               <>
-                <Bell className="w-3.5 h-3.5" /> Set Alert
+                <Bell className="w-3.5 h-3.5" /> Save highlight
               </>
             )}
           </button>
-          {saveError && (
-            <p role="alert" className="text-xs text-destructive">
-              Could not save this alert. Browser storage may be blocked or full.
-            </p>
-          )}
+
           {existingAlert && (
             <button
               onClick={handleClear}
-              className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border border-border rounded-lg text-muted-foreground hover:text-foreground hover:border-[oklch(0.82_0.012_85)] transition-all duration-200"
+              className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border border-border rounded-lg text-muted-foreground hover:text-foreground hover:border-[oklch(0.82_0.012_85)] transition-colors duration-200"
             >
               <BellOff className="w-3.5 h-3.5" />
               Clear

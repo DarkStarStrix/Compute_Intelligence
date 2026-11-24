@@ -48,6 +48,12 @@ it("renders retained prices and provider inventory without presenting stale stoc
     await act(() => vi.advanceTimersByTime(1600));
     const text = host.textContent!;
     expect(text).toContain("Last observed quote · not current");
+    const ticker = host.querySelector(
+      'section[aria-label="Compute price ticker"]'
+    );
+    expect(ticker).not.toBeNull();
+    expect(ticker?.textContent).toContain("Last observed");
+    expect(ticker?.textContent).toContain("H100 SXM");
     expect(host.querySelector('[role="status"]')?.textContent).toContain(
       "Showing last observed prices where fresh data is unavailable."
     );
@@ -70,6 +76,32 @@ it("renders retained prices and provider inventory without presenting stale stoc
     expect(host.textContent).toContain("Last observed prices");
     expect(host.textContent).toContain("4 offers");
     expect(host.textContent).not.toMatch(/refresh overdue/i);
+    const nav = (label: string) =>
+      [...host.querySelectorAll("button")].find(b => b.textContent === label)!;
+    await act(async () => {
+      nav("All Offers").click();
+      await vi.dynamicImportSettled();
+    });
+    const search = host.querySelector<HTMLInputElement>(
+      'input[name="offer-search"]'
+    )!;
+    const setter = Object.getOwnPropertyDescriptor(
+      HTMLInputElement.prototype,
+      "value"
+    )!.set!;
+    await act(() => {
+      setter.call(search, "H100");
+      search.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    const selected = host.querySelector<HTMLInputElement>(
+      'input[type="checkbox"][aria-label^="Compare "]'
+    )!;
+    await act(() => selected.click());
+    await act(() => nav("Overview").click());
+    await act(() => nav("All Offers").click());
+    expect(host.querySelector('input[name="offer-search"]')).toBe(search);
+    expect(search.value).toBe("H100");
+    expect(selected.checked).toBe(true);
   } finally {
     await act(() => root.unmount());
     host.remove();

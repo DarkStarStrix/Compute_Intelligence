@@ -29,6 +29,8 @@ export function JobCostCalculator({ offers }: { offers: Listing[] }) {
           {unit[0].toUpperCase() + unit.slice(1)} needed
           <input
             type="number"
+            name="compute-count"
+            inputMode="numeric"
             min="1"
             step="1"
             value={count}
@@ -39,6 +41,8 @@ export function JobCostCalculator({ offers }: { offers: Listing[] }) {
           Runtime (hours)
           <input
             type="number"
+            name="runtime-hours"
+            inputMode="decimal"
             min="0"
             step="any"
             value={runtime}
