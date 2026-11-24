@@ -1,7 +1,44 @@
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 import { analyticsDatabase } from "./analytics-sqlite";
 import { insertEvents } from "../analytics/store";
 import type { ProductEvent } from "../shared/analytics";
+
+it("logs only committed visits and provider clicks once, without identifiers or raw payloads", async () => {
+  const { db, sqlite } = analyticsDatabase();
+  const log = vi.spyOn(console, "log").mockImplementation(() => {});
+  const at = new Date().toISOString();
+  const sessionId = crypto.randomUUID();
+  const rows: ProductEvent[] = [
+    { event: "session_started", properties: {} },
+    { event: "provider_outbound_click", properties: { provider: "runpod" } },
+    { event: "support_opened", properties: {} },
+  ].map(
+    (value, sequence) =>
+      ({
+        ...value,
+        version: 1,
+        eventId: crypto.randomUUID(),
+        sessionId,
+        sequence,
+        occurredAt: at,
+        acquisition: { channel: "x", referrer: "t.co" },
+      }) as ProductEvent
+  );
+  try {
+    expect(await insertEvents(db, rows, "US", at)).toBe(3);
+    expect(await insertEvents(db, rows, "US", at)).toBe(0);
+    expect(log.mock.calls).toEqual([
+      [{ metric: "compute_visit", channel: "x" }],
+      [{ metric: "compute_provider_click", provider: "runpod" }],
+    ]);
+    sqlite.close();
+    await expect(insertEvents(db, rows, "US", at)).rejects.toThrow();
+    expect(log).toHaveBeenCalledTimes(2);
+  } finally {
+    log.mockRestore();
+    if (sqlite.isOpen) sqlite.close();
+  }
+});
 
 it("native Cloudflare console views preserve ordered session funnels and separate commercial actions", async () => {
   const { db, sqlite } = analyticsDatabase();

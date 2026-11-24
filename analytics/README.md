@@ -1,6 +1,18 @@
 # Product analytics: one Worker, one database
 
-The tracker stays on GitHub Pages. Its browser sends a few bounded interaction events to `compute-intelligence-ingest`; all counts and report queries run in the separate `compute-intelligence-analytics` D1 database. Search and provider navigation do not wait for analytics. No collector, refresh or watchlist state is changed.
+The tracker stays on GitHub Pages. Its browser sends a few bounded interaction events to `compute-intelligence-ingest`; the separate `compute-intelligence-analytics` D1 database retains the authoritative records. Search and provider navigation do not wait for analytics. No collector, refresh or watchlist state is changed.
+
+## Open the graphs
+
+[Compute Intelligence — Usage](https://dash.cloudflare.com/96d5e8e196a9df28b978e555c2a6b2bb/dashboards/09767a60-b3b0-4dd9-a878-af15615b8f63) is a saved, private **Cloudflare-native dashboard**. It shows visits, visits attributed to X and provider clicks over time, plus clicks grouped by provider. Open it and choose the time range; no SQL or extra login service is required. Cloudflare account access controls visibility.
+
+[Web Analytics visits](https://dash.cloudflare.com/96d5e8e196a9df28b978e555c2a6b2bb/web-analytics/overview/visits?siteTag~in=657f379446b948fca3bcb8b74b79c39f&excludeBots=Yes) provides the separate, longer-running traffic baseline and referrer breakdown.
+
+The usage dashboard reads native Worker logs. After D1 commits a new session-start or provider-click event, the Worker emits only its metric name and channel or provider. Deduplicated retries emit nothing. No session/browser IDs, referrer hostnames or event bodies are copied to custom logs. These logs are best-effort receipts, not a transaction with D1; platform limits or a crash after commit can leave gaps. D1 remains the audit source.
+
+Logs use full head sampling while traces keep their existing sample rate. Routine invocation logs are disabled to avoid unnecessary request metadata. As of November 24, 2026, Workers Free logs retain **three days**; older data is not available in these graphs. Native product graphs start at activation, without backfilling old D1 activity. Cloudflare Web Analytics and custom session counts have different collection rules and may differ. Visits are sessions, not verified unique people. X attribution includes known referrers and allowlisted campaign tags, and cannot identify every visit from an app that hides its source.
+
+## Detailed records
 
 There is no custom admin site, extra authentication service or Zero Trust setup. Read the reports through your existing Cloudflare account:
 

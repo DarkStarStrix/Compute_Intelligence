@@ -38,7 +38,25 @@ export async function insertEvents(
         )
     ),
   ]);
-  return results.slice(1).reduce((sum, result) => sum + result.meta.changes, 0);
+  let inserted = 0;
+  for (const [index, result] of results.slice(1).entries()) {
+    if (!result.meta.changes) continue;
+    inserted += result.meta.changes;
+    const event = events[index];
+    // Native Cloudflare graphs need no identifiers or event payloads. Retries
+    // that D1 deduplicates must not create additional visit/click log entries.
+    if (event.event === "session_started")
+      console.log({
+        metric: "compute_visit",
+        channel: event.acquisition?.channel ?? "direct",
+      });
+    else if (event.event === "provider_outbound_click")
+      console.log({
+        metric: "compute_provider_click",
+        provider: event.properties.provider,
+      });
+  }
+  return inserted;
 }
 export function countHealth(
   db: D1Database,
