@@ -124,6 +124,17 @@ it("only adds a referral signup action for matching configured providers", async
   expect(host.textContent).toContain("earn a commission");
 });
 
+it("activates the owner's RunPod link with a credit disclosure in the default support panel", async () => {
+  mount();
+  await act(() => root!.render(<SupportDialog onClose={() => {}} />));
+  const link = document.querySelector<HTMLAnchorElement>(
+    'a[data-analytics-commercial="referral"][data-analytics-provider="runpod"]'
+  );
+  expect(link?.href).toBe("https://runpod.io/?ref=e6fqbtyq");
+  expect(link?.rel).toContain("sponsored");
+  expect(link?.parentElement?.textContent).toContain("earn compute credits");
+});
+
 it("rejects unsafe links and non-Stripe payment destinations", () => {
   for (const url of [
     "",

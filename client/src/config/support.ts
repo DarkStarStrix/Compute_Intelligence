@@ -19,8 +19,14 @@ export const supportSettings: SupportSettings = {
   stripeUrl: "",
   // Leave blank to use the public GitHub sponsorship inquiry form.
   sponsorshipUrl: "",
-  // Example: { providerId: "runpod", providerName: "RunPod", signupUrl: "YOUR_APPROVED_URL", reward: "credits" }
-  referrals: [],
+  referrals: [
+    {
+      providerId: "runpod",
+      providerName: "RunPod",
+      signupUrl: "https://runpod.io?ref=e6fqbtyq",
+      reward: "credits",
+    },
+  ],
   // Add only confirmed, active sponsors. These never affect provider rankings.
   sponsors: [],
 };
