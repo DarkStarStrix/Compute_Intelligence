@@ -106,6 +106,8 @@ jobs:
           for attempt in {1..12}; do
             url="${PAGES_URL%/}/data/current.json?verify=${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-$attempt"
             if curl --fail --silent --show-error --max-time 10 "$url" |
+                jq -e --arg expected "$EXPECTED_AT" '.generatedAt == $expected' >/dev/null &&
+                curl --fail --silent --show-error --max-time 10 "${PAGES_URL%/}/data/mcp/catalog.json?verify=${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-$attempt" |
                 jq -e --arg expected "$EXPECTED_AT" '.generatedAt == $expected' >/dev/null; then
               exit 0
             fi

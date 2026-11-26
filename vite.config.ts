@@ -1,3 +1,4 @@
+import { mcpSnapshotFiles } from "./shared/mcp-snapshot";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
@@ -20,13 +21,16 @@ export default defineConfig({
     {
       name: "current-price-snapshot",
       apply: "build",
-      generateBundle() {
+      async generateBundle() {
         const file = new URL(
           "./client/public/data/latest.json",
           import.meta.url
         );
         const snapshot = readSnapshot(JSON.parse(readFileSync(file, "utf8")));
         revision = snapshot.generatedAt;
+        for (const file of await mcpSnapshotFiles(snapshot)) {
+          this.emitFile({type: "asset", fileName: `data/mcp/${file.name}`, source: file.content});
+        }
         this.emitFile({
           type: "asset",
           fileName: "data/current.json",
