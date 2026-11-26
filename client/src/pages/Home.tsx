@@ -7,10 +7,8 @@ import { QuickComparison } from "@/components/QuickComparison";
 import { TrendsPanel } from "@/components/TrendsPanel";
 import { ComputeTicker } from "@/components/ComputeTicker";
 import {
-  Activity,
   ArrowRight,
   ChevronRight,
-  Cpu,
   Github,
   Moon,
   RefreshCw,
@@ -32,6 +30,7 @@ import { readViewLink } from "@/lib/view-link";
 import { computeKinds, type ComputeKind } from "@shared/compute";
 
 // Generated assets
+const BRAND_ICON = `${import.meta.env.BASE_URL}brand/icon.svg`;
 const GPU_DIAGRAM = `${import.meta.env.BASE_URL}images/gpu-blueprint.webp`;
 const CONSTELLATION = `${import.meta.env.BASE_URL}images/provider-network.svg`;
 const loadOffers = () =>
@@ -190,14 +189,20 @@ export default function Home() {
               className="header-brand-mark grid size-9 place-items-center rounded-xl"
               aria-hidden="true"
             >
-              <Cpu className="size-5" strokeWidth={1.6} />
+              <img
+                src={BRAND_ICON}
+                alt=""
+                width={36}
+                height={36}
+                className="size-9"
+              />
             </span>
             <span className="min-w-0">
               <span className="block text-sm font-bold leading-tight tracking-tight">
                 Compute Intelligence
               </span>
               <span className="hidden sm:block mt-0.5 text-xs text-muted-foreground">
-                Compute price observatory
+                Find the compute that fits.
               </span>
             </span>
           </button>
@@ -710,7 +715,13 @@ export default function Home() {
         <div className="container py-7 grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <Activity className="w-3.5 h-3.5 text-teal" />
+              <img
+                src={BRAND_ICON}
+                alt=""
+                width={24}
+                height={24}
+                className="size-6"
+              />
               <span className="text-sm font-semibold text-foreground">
                 Compute Intelligence
               </span>
