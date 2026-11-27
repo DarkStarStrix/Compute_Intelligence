@@ -11,3 +11,5 @@ work/
 alerts/wrangler.local.jsonc
 
 analytics/wrangler.*.local.jsonc
+
+mcp/.data/

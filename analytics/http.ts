@@ -1,8 +1,16 @@
 /** Read bounded input before parsing; never log request bodies. */
-export async function readBounded(
-  request: Request | Response,
-  maxBytes: number
-) {
+export interface BoundedBody {
+  headers: { get(name: string): string | null };
+  body: {
+    cancel(reason?: unknown): Promise<void>;
+    getReader(): {
+      read(): Promise<{ done?: boolean; value?: Uint8Array }>;
+      cancel(reason?: unknown): Promise<void>;
+      releaseLock(): void;
+    };
+  } | null;
+}
+export async function readBounded(request: BoundedBody, maxBytes: number) {
   if (Number(request.headers.get("Content-Length")) > maxBytes)
     throw new Error("size");
   const reader = request.body?.getReader();
@@ -13,6 +21,7 @@ export async function readBounded(
     for (;;) {
       const { done, value } = await reader.read();
       if (done) break;
+      if (!value) throw new Error("body");
       size += value.byteLength;
       if (size > maxBytes) {
         await reader.cancel();

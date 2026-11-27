@@ -29,7 +29,11 @@ export default defineConfig({
         const snapshot = readSnapshot(JSON.parse(readFileSync(file, "utf8")));
         revision = snapshot.generatedAt;
         for (const file of await mcpSnapshotFiles(snapshot)) {
-          this.emitFile({type: "asset", fileName: `data/mcp/${file.name}`, source: file.content});
+          this.emitFile({
+            type: "asset",
+            fileName: `data/mcp/${file.name}`,
+            source: file.content,
+          });
         }
         this.emitFile({
           type: "asset",
