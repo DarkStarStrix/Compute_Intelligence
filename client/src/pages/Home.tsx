@@ -1,6 +1,6 @@
 import { track } from "@/lib/analytics";
 import { lazy, startTransition, Suspense, useState, useEffect } from "react";
-import { activeSponsors, publicUrl } from "@/config/support";
+import { activeSponsors, publicUrl, repositoryUrl } from "@/config/support";
 import { LiveH100 } from "@/components/LiveH100";
 import { MarketPulse } from "@/components/MarketPulse";
 import { QuickComparison } from "@/components/QuickComparison";
@@ -725,13 +725,25 @@ export default function Home() {
               <span className="text-sm font-semibold text-foreground">
                 Compute Intelligence
               </span>
+              <a
+                href={`${repositoryUrl}/releases/tag/v${import.meta.env.VITE_APP_VERSION}`}
+                className="rounded border border-border px-1.5 py-0.5 font-data text-xs text-teal hover:underline"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`Release v${import.meta.env.VITE_APP_VERSION}`}
+              >
+                v{import.meta.env.VITE_APP_VERSION}
+              </a>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed">
               Compute market intelligence for ML engineers. Normalized pricing,
               source timestamps, and observed availability from connected
               providers.
             </p>
-            <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-teal">
+            <nav
+              aria-label="Project resources"
+              className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-teal"
+            >
               <a
                 href="https://github.com/DarkStarStrix/gpu-price-tracker"
                 className="inline-flex items-center gap-1.5 underline"
@@ -747,7 +759,31 @@ export default function Home() {
               >
                 Support & sponsorship
               </button>
-            </div>
+              <a
+                href={`${repositoryUrl}/blob/main/mcp/USAGE.md`}
+                className="underline"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                MCP setup
+              </a>
+              <a
+                href={`${repositoryUrl}/blob/main/SECURITY.md`}
+                className="underline"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Security
+              </a>
+              <a
+                href={`${repositoryUrl}/blob/main/docs/README.md`}
+                className="underline"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Documentation
+              </a>
+            </nav>
           </div>
           <div>
             <div className="mono-label text-muted-foreground mb-2">

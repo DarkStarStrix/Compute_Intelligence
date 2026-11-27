@@ -2,13 +2,15 @@
 
 Read-only compute discovery over Streamable HTTP. The five tools reuse the existing catalog schema, freshness rules, compute-listing conversion and whole-node cost calculator.
 
+For client setup, argument examples and result interpretation, start with the [usage guide](USAGE.md). See [troubleshooting](TROUBLESHOOTING.md) for connection and data issues, and the [security policy](../SECURITY.md) for reporting.
+
 ## Connect
 
 Public MCP: `https://compute-intelligence-mcp.allanw-mk.workers.dev/mcp`
 
 Remote dev MCP: `https://compute-intelligence-mcp-dev.allanw-mk.workers.dev/mcp`
 
-Local MCP: `http://127.0.0.1:8791/mcp` (`pnpm dev:mcp`). Both read the live public collector feed. No dataset preparation, static-asset upload, login or API key is required. The public endpoint is rate limited; do not send secrets or private workload details.
+Local MCP: `http://127.0.0.1:8791/mcp` (`pnpm dev:mcp`). All endpoints read the live public collector feed. No dataset preparation, static-asset upload, login or API key is required. The public endpoint is rate limited; do not send secrets or private workload details.
 
 Tools: `search_compute`, `get_offer`, `compare_offers`, `estimate_job_cost`, `get_price_history`.
 

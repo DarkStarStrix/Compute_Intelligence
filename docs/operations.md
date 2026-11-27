@@ -24,6 +24,8 @@ The existing collector retains a rolling seven-day history. Nebius also provides
 2. Push verified changes to `main`, or run **Refresh prices and deploy Pages** manually.
 3. Check both build and deployment jobs. Each deployment verifies that the public snapshot matches the revision built by that run.
 
+The obsolete generated `gh-pages` demo is retained under tag `archive/legacy-gh-pages-2026-11-27`. Current deployments use Actions artifacts rather than that branch.
+
 The workflow uses Node 22, a frozen pnpm lockfile, type checking, tests, collection, and a Pages build. Only the build job can commit observations; only deployment receives Pages/OIDC write permissions. Public collection requires no provider API secrets.
 
 Keep the committed snapshot and parser fixtures. They are data and verification evidence, not disposable build output.

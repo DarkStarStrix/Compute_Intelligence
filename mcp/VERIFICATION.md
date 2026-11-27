@@ -1,4 +1,20 @@
-# Development verification — November 26, 2026
+# MCP verification evidence
+
+## Public release — November 27, 2026
+
+Application release `v2.1.0` includes MCP server `0.3.0`. PR #2 merged as `07a0b92b2a2214922207c1f9c451eb380043b487`. The public Worker deployment is `df479c41-a7a8-41ec-9464-6ba4c5d2779f` at `https://compute-intelligence-mcp.allanw-mk.workers.dev/mcp`; the development endpoint remains separate.
+
+Executed during the rollout:
+
+- Type checking and **192 tests across 35 files** passed, including production-environment host isolation and a 100-request fixture burst with concurrency 10.
+- Production-config local workerd and hosted official SDK smoke checks passed for all five tools, plus CPU/TPU/sandbox searches. The hosted run used publication `2026-11-27T14:58:28.808Z`.
+- Hosted five-tool request times in that single run were 119–547 ms. This is one functional smoke run, not a latency benchmark or service-level guarantee.
+- A separate native Codex MCP connection searched the live dev endpoint successfully.
+- Hosted public batch rejection returned 400; hostile-Origin rejection returned 403.
+- Production Worker packaging, Pages build, dependency audit and the GitHub PR check passed.
+- Production has a separate host allowlist and rate-limit namespace. No provider collector, database or scheduling path was added.
+
+The following development evidence is historical. Sustained distributed-load/free-tier resource behavior remains unqualified; the fixture burst is not proof of public load resilience. See [security limits](SECURITY.md) and [usage](USAGE.md).
 
 ## 0.3.0 — trust and public-interface hardening
 

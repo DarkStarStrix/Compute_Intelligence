@@ -17,16 +17,18 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/DarkStarStrix/gpu-price-tracker/releases/latest"><img src="https://img.shields.io/github/v/release/DarkStarStrix/gpu-price-tracker?color=21abc0" alt="Latest release"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-21abc0" alt="MIT license"></a>
+  <a href="https://github.com/DarkStarStrix/gpu-price-tracker/releases/latest"><img src="docs/assets/badges/release.svg" alt="Latest release"></a>
+  <a href="LICENSE"><img src="docs/assets/badges/license.svg" alt="MIT license"></a>
   <a href="https://github.com/DarkStarStrix/gpu-price-tracker/actions/workflows/pages.yml"><img src="https://github.com/DarkStarStrix/gpu-price-tracker/actions/workflows/pages.yml/badge.svg" alt="Collector and Pages deployment status"></a>
 </p>
 
 <p align="center">
-  <a href="https://www.producthunt.com/posts/compute-intelligence"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1332585&amp;theme=neutral" alt="Compute Intelligence on Product Hunt" width="250" height="54"></a>
+  <a href="https://www.producthunt.com/posts/compute-intelligence"><img src="docs/assets/badges/product-hunt.svg" alt="Compute Intelligence on Product Hunt"></a>
 </p>
 
-![Compute Intelligence: GPU, CPU, TPU and sandbox pricing](client/public/brand/launch-cover.png)
+<p align="center">
+  <img src="client/public/brand/launch-cover.png" alt="Compute Intelligence: GPU, CPU, TPU and sandbox pricing" width="960">
+</p>
 
 ## Find compute that fits your workload
 
@@ -82,7 +84,7 @@ Try asking:
 
 Search never silently relaxes requirements. Empty results describe the published catalog, not the entire market. The MCP selects a lowest comparable unit quote only when its compatibility checks pass; it does not promise equal performance or the lowest complete job bill.
 
-See the [MCP guide](mcp/README.md), [trust and security review](mcp/SECURITY.md), and [verification evidence](mcp/VERIFICATION.md) for contracts and limitations.
+See the [MCP quick start](mcp/USAGE.md), [troubleshooting](mcp/TROUBLESHOOTING.md), [MCP architecture guide](mcp/README.md), [trust and security review](mcp/SECURITY.md), and [verification evidence](mcp/VERIFICATION.md) for contracts and limitations.
 
 ## Run locally
 
@@ -132,13 +134,13 @@ The collector owns provider I/O and durable observations. The website and MCP re
 
 The website runs on **GitHub Pages**; the public MCP runs on **Cloudflare Workers**. There is no separate always-on provider server or database required for browsing or MCP queries. Optional watchlists and private analytics have separate service requirements.
 
-See [operations and deployment](docs/operations.md) and [architecture contracts](ARCHITECTURE.md).
+See the [documentation index](docs/README.md), [operations and deployment](docs/operations.md), and [architecture contracts](ARCHITECTURE.md).
 
 ## Contribute a provider or improvement
 
 Start with [CONTRIBUTING.md](CONTRIBUTING.md). Provider onboarding has a [standardized data-only PR template](.github/PULL_REQUEST_TEMPLATE/provider.md), a [submission format](provider-submissions/README.md), and a [maintainer integration guide](docs/provider-onboarding.md). A submission does not modify the backend collector; maintainers implement and review the integration separately.
 
-[Request a provider](https://github.com/DarkStarStrix/gpu-price-tracker/issues/new?template=provider.yml) or [report an issue](https://github.com/DarkStarStrix/gpu-price-tracker/issues). Do not include credentials, private account data, or usable exploit details in public reports. See [security review and boundaries](mcp/SECURITY.md).
+[Request a provider](https://github.com/DarkStarStrix/gpu-price-tracker/issues/new?template=provider.yml) or [report an issue](https://github.com/DarkStarStrix/gpu-price-tracker/issues). Do not include credentials, private account data, or usable exploit details in public reports. See the [security reporting policy](SECURITY.md) and [MCP security boundaries](mcp/SECURITY.md).
 
 ## Support the project
 
@@ -148,12 +150,12 @@ Interested in sponsoring development? Use the [sponsorship inquiry](https://gith
 
 ## Built with
 
-<p>
-  <img src="https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&amp;logoColor=white" alt="TypeScript">
-  <img src="https://img.shields.io/badge/React-149ECA?logo=react&amp;logoColor=white" alt="React">
-  <img src="https://img.shields.io/badge/Vite-646CFF?logo=vite&amp;logoColor=white" alt="Vite">
-  <img src="https://img.shields.io/badge/Cloudflare-F38020?logo=cloudflare&amp;logoColor=white" alt="Cloudflare Workers">
-  <img src="https://img.shields.io/badge/GitHub_Pages-222222?logo=github&amp;logoColor=white" alt="GitHub Pages">
+<p align="center">
+  <img src="docs/assets/badges/typescript.svg" alt="TypeScript">
+  <img src="docs/assets/badges/react.svg" alt="React">
+  <img src="docs/assets/badges/vite.svg" alt="Vite">
+  <img src="docs/assets/badges/cloudflare.svg" alt="Cloudflare Workers">
+  <img src="docs/assets/badges/github-pages.svg" alt="GitHub Pages">
 </p>
 
 [MIT licensed](LICENSE). Provider trademarks belong to their respective owners; their inclusion does not imply endorsement.
