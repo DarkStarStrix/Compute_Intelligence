@@ -161,3 +161,105 @@ it("rejects hostile hosts/origins, throttles, bounds chunked bodies, and handles
     (await w.fetch(new Request("http://127.0.0.1:8791/mcp"), env)).status
   ).toBe(405);
 });
+
+it("rejects batch amplification before any catalog I/O", async () => {
+  const data = dataFor();
+  const current = vi.fn(data.current);
+  data.current = current;
+  const worker = createWorker(data);
+  const response = await worker.fetch(
+    new Request("http://127.0.0.1:8791/mcp", {
+      method: "POST",
+      headers,
+      body: JSON.stringify(
+        [1, 2].map(id => ({
+          jsonrpc: "2.0",
+          id,
+          method: "tools/call",
+          params: { name: "get_offer", arguments: { offerId: "node" } },
+        }))
+      ),
+    }),
+    env
+  );
+  await response.text();
+  expect(response.status).toBe(400);
+  expect(current).not.toHaveBeenCalled();
+});
+
+it("bounds streaming and declared bodies before invoking data, and preserves media-type rejection", async () => {
+  const data = dataFor(),
+    current = vi.fn(data.current);
+  data.current = current;
+  const w = createWorker(data);
+  for (const declared of [true, false]) {
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode(" ".repeat(17000)));
+        controller.close();
+      },
+    });
+    const request = new Request("http://127.0.0.1:8791/mcp", {
+      method: "POST",
+      headers: {
+        ...headers,
+        ...(declared ? { "Content-Length": "17000" } : {}),
+      },
+      body,
+      duplex: "half",
+    } as RequestInit);
+    expect((await w.fetch(request, env)).status).toBe(413);
+  }
+  const wrongType = new Request("http://127.0.0.1:8791/mcp", {
+    method: "POST",
+    headers: { ...headers, "Content-Type": "text/plain" },
+    body: "{}",
+  });
+  expect((await w.fetch(wrongType, env)).status).toBe(415);
+  expect(current).not.toHaveBeenCalled();
+});
+
+it("rejects injected fetch parameters and invalid config filters before source I/O", async () => {
+  const data = dataFor(),
+    current = vi.fn(data.current);
+  data.current = current;
+  const w = createWorker(data);
+  for (const arguments_ of [
+    { kind: "gpu", url: "https://169.254.169.254/latest/meta-data/" },
+    { kind: "gpu", minGpuCount: 8, maxGpuCount: 1 },
+    { kind: "cpu", minGpuCount: 8 },
+    { kind: "gpu", limit: 1000000 },
+  ]) {
+    const r = await body(
+      await w.fetch(
+        req("tools/call", { name: "search_compute", arguments: arguments_ }),
+        env
+      )
+    );
+    expect(r.result?.isError || r.error).toBeTruthy();
+  }
+  expect(current).not.toHaveBeenCalled();
+});
+
+it("reports cross-field input validation before any provider I/O", async () => {
+  const data = dataFor(),
+    current = vi.fn(data.current);
+  data.current = current;
+  const w = createWorker(data);
+  for (const arguments_ of [
+    { kind: "gpu", minGpuCount: 8, maxGpuCount: 1 },
+    { kind: "cpu", minGpuCount: 8 },
+  ]) {
+    const r = await body(
+      await w.fetch(
+        req("tools/call", { name: "search_compute", arguments: arguments_ }),
+        env
+      )
+    );
+    expect(r.result.isError).toBe(true);
+    const message = r.result.content[0].text;
+    expect(message).toContain("Input validation");
+    expect(message).not.toContain("Published data");
+  }
+  expect(current).not.toHaveBeenCalled();
+});

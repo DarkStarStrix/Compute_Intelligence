@@ -2,6 +2,7 @@ import { createMcpHandler } from "@modelcontextprotocol/server";
 import type { ExecutionContext } from "@cloudflare/workers-types";
 import { createServer } from "./server";
 import { createPublishedData } from "./data";
+import { readBounded } from "../analytics/http";
 
 // A new SDK server per exchange prevents request or client state leaking between callers.
 export function createWorker(data?: Parameters<typeof createServer>[0]) {
@@ -43,7 +44,7 @@ export function createWorker(data?: Parameters<typeof createServer>[0]) {
           {
             service: "compute-intelligence-mcp",
             environment: "development",
-            version: "0.2.0",
+            version: "0.3.0",
             readOnly: true,
             dataMode: "published-snapshot",
             dataSource:
@@ -71,7 +72,54 @@ export function createWorker(data?: Parameters<typeof createServer>[0]) {
       }
       const started = Date.now();
       try {
-        const response = await handler.fetch(request);
+        let parsedBody: unknown;
+        if (request.method === "POST") {
+          if (
+            request.headers
+              .get("Content-Type")
+              ?.split(";")[0]
+              .trim()
+              .toLowerCase() !== "application/json"
+          )
+            return Response.json(
+              { error: "Content-Type must be application/json" },
+              { status: 415, headers }
+            );
+          try {
+            parsedBody = JSON.parse(await readBounded(request, 16384));
+          } catch (error) {
+            const status =
+              error instanceof Error && error.message === "size" ? 413 : 400;
+            return Response.json(
+              {
+                error:
+                  status === 413
+                    ? "Request body too large"
+                    : "Invalid JSON body",
+              },
+              { status, headers }
+            );
+          }
+          // The legacy SDK accepts up to 100 messages per batch. One HTTP rate-limit
+          // decision must never authorize that many concurrent catalog reads.
+          if (Array.isArray(parsedBody))
+            return Response.json(
+              {
+                jsonrpc: "2.0",
+                id: null,
+                error: {
+                  code: -32600,
+                  message:
+                    "Batch requests are not supported; send one request per HTTP exchange.",
+                },
+              },
+              { status: 400, headers }
+            );
+        }
+        const response = await handler.fetch(
+          request,
+          request.method === "POST" ? { parsedBody } : undefined
+        );
         const out = new Response(response.body, response);
         headers.forEach((v, k) => out.headers.set(k, v));
         console.log({

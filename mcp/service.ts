@@ -14,6 +14,9 @@ import {
   historyInput,
   searchInput,
   type OfferView,
+  type searchOutput,
+  searchFilterKeys,
+  comparisonBlocker,
 } from "./contracts";
 
 export class ComputeError extends Error {
@@ -50,7 +53,7 @@ export interface ComputeData {
 }
 const caveat =
   "Observed prices are indicative. Verify stock and final billing with the provider; equal specifications do not establish equal performance.";
-function listings(s: Snapshot) {
+function listings(s: Snapshot): Listing[] {
   return [...s.offers, ...computeListings(s)];
 }
 export function offerView(s: Snapshot, o: Listing, now: number): OfferView {
@@ -59,6 +62,7 @@ export function offerView(s: Snapshot, o: Listing, now: number): OfferView {
     offerId: o.offerId,
     kind: o.kind ?? "gpu",
     model: o.gpuModelName,
+    gpuModelId: o.kind ? null : o.gpuModelId,
     providerId: o.providerId,
     providerName: o.providerName,
     region: o.region,
@@ -108,6 +112,14 @@ function meta(
     warnings.push(
       "Some quotes are retained or stale; availability is unknown for those quotes."
     );
+  if (offers.some(o => o.availability === "unavailable"))
+    warnings.push(
+      "Some quotes explicitly report unavailable stock; a current price is not a capacity offer."
+    );
+  if (offers.some(o => o.availability === "unknown"))
+    warnings.push(
+      "Stock is not established for some quotes; unknown does not mean available."
+    );
   if (offers.some(o => o.billingAssumed))
     warnings.push(
       "Some sources omit billing model; on-demand follows the site's existing default."
@@ -125,42 +137,135 @@ export function createComputeService(data: ComputeData, clock = Date.now) {
       const s = await data.current(),
         now = clock();
       const terms = args.query?.toLowerCase().split(/\s+/) ?? [];
-      const offers = listings(s)
-        .map(o => offerView(s, o, now))
-        .filter(
-          o =>
-            o.kind === args.kind &&
-            (args.includeStale || o.current) &&
-            (!args.providerId || o.providerId === args.providerId) &&
-            (!args.region ||
-              o.region.toLowerCase() === args.region.toLowerCase()) &&
-            (!args.billing || o.billing === args.billing) &&
-            (!args.cloudType || o.cloudType === args.cloudType) &&
-            (!args.availability || o.availability === args.availability) &&
-            (args.minVramGb === undefined ||
-              (o.vramPerGpuGb !== null && o.vramPerGpuGb >= args.minVramGb)) &&
-            (args.minVcpus === undefined ||
-              (o.vcpus !== null && o.vcpus >= args.minVcpus)) &&
-            (args.minRamGb === undefined ||
-              (o.ramGb !== null && o.ramGb >= args.minRamGb)) &&
-            (args.maxUnitPriceUsd === undefined ||
-              o.unitPriceUsd <= args.maxUnitPriceUsd) &&
-            terms.every(t =>
-              `${o.model} ${o.providerName} ${o.region}`
-                .toLowerCase()
-                .includes(t)
-            )
-        )
+      const all = listings(s);
+      const candidates = all
+        .filter(o => (o.kind ?? "gpu") === args.kind)
+        .map(o => offerView(s, o, now));
+      // Counts are independent: one listing can fail several filters. Never relax a filter.
+      function checks(
+        o: OfferView
+      ): Record<(typeof searchFilterKeys)[number], boolean> {
+        const knownCount = o.configurationKnown ? o.gpuCount : null;
+        return {
+          freshness: args.includeStale || o.current,
+          query: terms.every(t =>
+            `${o.model} ${o.gpuModelId ?? ""} ${o.providerName} ${o.region}`
+              .toLowerCase()
+              .includes(t)
+          ),
+          gpuModelId: !args.gpuModelId || o.gpuModelId === args.gpuModelId,
+          minGpuCount:
+            args.minGpuCount === undefined ||
+            (knownCount !== null && knownCount >= args.minGpuCount),
+          maxGpuCount:
+            args.maxGpuCount === undefined ||
+            (knownCount !== null && knownCount <= args.maxGpuCount),
+          providerId: !args.providerId || o.providerId === args.providerId,
+          region:
+            !args.region ||
+            o.region.toLowerCase() === args.region.toLowerCase(),
+          billing: !args.billing || o.billing === args.billing,
+          cloudType: !args.cloudType || o.cloudType === args.cloudType,
+          availability:
+            !args.availability || o.availability === args.availability,
+          minVramGb:
+            args.minVramGb === undefined ||
+            (o.vramPerGpuGb !== null && o.vramPerGpuGb >= args.minVramGb),
+          minVcpus:
+            args.minVcpus === undefined ||
+            (o.vcpus !== null && o.vcpus >= args.minVcpus),
+          minRamGb:
+            args.minRamGb === undefined ||
+            (o.ramGb !== null && o.ramGb >= args.minRamGb),
+          maxUnitPriceUsd:
+            args.maxUnitPriceUsd === undefined ||
+            o.unitPriceUsd <= args.maxUnitPriceUsd,
+        };
+      }
+      const evaluated = candidates.map(offer => ({
+        offer,
+        checks: checks(offer),
+      }));
+      const matches = (values: ReturnType<typeof checks>, allowStale = false) =>
+        searchFilterKeys.every(
+          key => (allowStale && key === "freshness") || values[key]
+        );
+      const offers = evaluated
+        .filter(e => matches(e.checks))
+        .map(e => e.offer)
         .sort(
           (a, b) =>
             a.unitPriceUsd - b.unitPriceUsd ||
             a.offerId.localeCompare(b.offerId)
+        );
+      const matchingStaleListings = evaluated.filter(
+        e => !e.offer.current && matches(e.checks, true)
+      ).length;
+      const currentListings = candidates.filter(o => o.current).length;
+      const reason: z.infer<typeof searchOutput>["diagnostics"]["reason"] =
+        offers.length
+          ? args.offset >= offers.length
+            ? "page_out_of_range"
+            : "results"
+          : !all.length
+            ? "empty_catalog"
+            : !candidates.length
+              ? "no_listings_for_kind"
+              : !args.includeStale && matchingStaleListings
+                ? "only_stale_matches"
+                : !args.includeStale && !currentListings
+                  ? "no_current_listings"
+                  : "no_filter_matches";
+      const suggestions: string[] = [];
+      if (reason === "page_out_of_range")
+        suggestions.push(
+          "Reset offset to 0; the catalog may have changed since the previous page."
+        );
+      if (reason === "only_stale_matches" || reason === "no_current_listings")
+        suggestions.push(
+          "Wait for successful source collection. includeStale:true can show retained quotes, with unknown effective stock; they are not current offers."
+        );
+      if (reason === "no_filter_matches") {
+        suggestions.push(
+          "No listing satisfies all supplied filters. Change constraints explicitly; none were relaxed."
+        );
+        if (args.region)
+          suggestions.push(
+            "Region must match an exact provider-reported name; broad geography is not inferred."
+          );
+      }
+      if (reason === "empty_catalog" || reason === "no_listings_for_kind")
+        suggestions.push(
+          "The published catalog has no listings in this scope. This does not establish that providers offer no such compute."
         );
       const page = offers.slice(args.offset, args.offset + args.limit);
       return {
         ...meta(s, now, page, data.mode),
         unit: args.kind === "gpu" ? "GPU-hour" : computeKinds[args.kind].unit,
         offers: page,
+        appliedFilters: args,
+        diagnostics: {
+          reason,
+          kindListings: candidates.length,
+          currentListings,
+          matchingStaleListings,
+          missingRequiredSpecs: candidates.filter(
+            o =>
+              ((args.minGpuCount !== undefined ||
+                args.maxGpuCount !== undefined) &&
+                (!o.configurationKnown || o.gpuCount === null)) ||
+              (args.minVramGb !== undefined && o.vramPerGpuGb === null) ||
+              (args.minVcpus !== undefined && o.vcpus === null) ||
+              (args.minRamGb !== undefined && o.ramGb === null)
+          ).length,
+          rejectedByFilter: Object.fromEntries(
+            searchFilterKeys.map(key => [
+              key,
+              evaluated.filter(e => !e.checks[key]).length,
+            ])
+          ) as Record<(typeof searchFilterKeys)[number], number>,
+          suggestions,
+        },
         total: offers.length,
         nextOffset:
           args.offset + page.length < offers.length
@@ -181,17 +286,43 @@ export function createComputeService(data: ComputeData, clock = Date.now) {
         now = clock();
       const offers = args.offerIds.map(id => offerView(s, find(s, id), now));
       const comparableUnit = new Set(offers.map(o => o.unit)).size === 1;
-      const sameHardware = new Set(offers.map(o => o.model)).size === 1;
-      const comparable =
-        comparableUnit &&
-        sameHardware &&
-        offers.every(
+      const comparisonBlockers: z.infer<typeof comparisonBlocker>[] = [];
+      if (!comparableUnit) comparisonBlockers.push("different_units");
+      if (
+        new Set(offers.map(o => `${o.kind}:${o.gpuModelId ?? o.model}`))
+          .size !== 1
+      )
+        comparisonBlockers.push("different_models");
+      // The collector intentionally preserves unspecified H100/H200 and A100 variants.
+      if (
+        offers.some(
           o =>
-            o.current &&
-            o.availability !== "unavailable" &&
-            o.configurationKnown
-        ) &&
-        new Set(offers.map(o => o.billing)).size === 1;
+            o.kind === "gpu" &&
+            (!o.gpuModelId ||
+              /unknown|unspecified/.test(o.gpuModelId) ||
+              /^a100-\d+$/.test(o.gpuModelId))
+        )
+      )
+        comparisonBlockers.push("unknown_model_variant");
+      if (new Set(offers.map(o => o.billing)).size !== 1)
+        comparisonBlockers.push("different_billing");
+      if (offers.some(o => !o.current)) comparisonBlockers.push("stale_quotes");
+      if (offers.some(o => o.availability === "unavailable"))
+        comparisonBlockers.push("unavailable");
+      const requiredSpecs = (o: OfferView) =>
+        o.kind === "gpu"
+          ? [o.vramPerGpuGb]
+          : o.kind === "tpu"
+            ? []
+            : [o.vcpus, o.ramGb];
+      if (
+        offers.some(
+          o => !o.configurationKnown || requiredSpecs(o).some(v => v === null)
+        )
+      )
+        comparisonBlockers.push("unknown_configuration");
+      if (new Set(offers.map(o => JSON.stringify(requiredSpecs(o)))).size !== 1)
+        comparisonBlockers.push("different_specs");
       const warnings = meta(s, now, offers, data.mode);
       warnings.warnings.push(
         "GPU unit prices can require renting a whole node. Compare node price, minimum rental, configuration and billing model before choosing."
@@ -204,13 +335,15 @@ export function createComputeService(data: ComputeData, clock = Date.now) {
         ...warnings,
         offers,
         comparableUnit,
-        cheapestOfferId: comparable
-          ? [...offers].sort(
-              (a, b) =>
-                a.unitPriceUsd - b.unitPriceUsd ||
-                a.offerId.localeCompare(b.offerId)
-            )[0].offerId
-          : null,
+        comparisonBlockers,
+        cheapestOfferId:
+          comparisonBlockers.length === 0
+            ? [...offers].sort(
+                (a, b) =>
+                  a.unitPriceUsd - b.unitPriceUsd ||
+                  a.offerId.localeCompare(b.offerId)
+              )[0].offerId
+            : null,
       };
     },
     async cost(args: z.infer<typeof costInput>) {

@@ -7,6 +7,29 @@ export const searchInput = z
   .strictObject({
     kind,
     query: label.optional(),
+    gpuModelId: label
+      .optional()
+      .describe(
+        "Exact canonical GPU model ID returned by search_compute; GPU-only."
+      ),
+    minGpuCount: z
+      .number()
+      .int()
+      .min(1)
+      .max(100000)
+      .optional()
+      .describe(
+        "Minimum physical GPUs per listed node, not the requested job size; GPU-only, known configurations only."
+      ),
+    maxGpuCount: z
+      .number()
+      .int()
+      .min(1)
+      .max(100000)
+      .optional()
+      .describe(
+        "Maximum physical GPUs per listed node; GPU-only, known configurations only."
+      ),
     providerId: label.optional(),
     region: label
       .optional()
@@ -24,9 +47,23 @@ export const searchInput = z
     limit: z.number().int().min(1).max(25).default(10),
     offset: z.number().int().min(0).max(10000).default(0),
   })
-  .refine(x => x.kind === "gpu" || x.minVramGb === undefined, {
-    message: "VRAM filtering applies only to GPUs.",
-  });
+  .refine(
+    x =>
+      x.kind === "gpu" ||
+      [x.minVramGb, x.gpuModelId, x.minGpuCount, x.maxGpuCount].every(
+        v => v === undefined
+      ),
+    {
+      message: "GPU model, count and VRAM filters apply only to GPUs.",
+    }
+  )
+  .refine(
+    x =>
+      x.minGpuCount === undefined ||
+      x.maxGpuCount === undefined ||
+      x.minGpuCount <= x.maxGpuCount,
+    { message: "Minimum GPU count exceeds maximum." }
+  );
 export const compareInput = z
   .strictObject({ offerIds: z.array(label).min(2).max(5) })
   .refine(x => new Set(x.offerIds).size === x.offerIds.length, {
@@ -48,6 +85,7 @@ export const offerOutput = z.object({
   providerId: z.string(),
   providerName: z.string(),
   model: z.string(),
+  gpuModelId: z.string().nullable(),
   region: z.string(),
   cloudType: z.string(),
   billing: z.enum(["on-demand", "spot"]),
@@ -82,6 +120,32 @@ export const metadataOutput = {
   evaluatedAt: z.string(),
   warnings: z.array(z.string()),
 };
+export const searchFilterKeys = [
+  "freshness",
+  "query",
+  "gpuModelId",
+  "minGpuCount",
+  "maxGpuCount",
+  "providerId",
+  "region",
+  "billing",
+  "cloudType",
+  "availability",
+  "minVramGb",
+  "minVcpus",
+  "minRamGb",
+  "maxUnitPriceUsd",
+] as const;
+export const comparisonBlocker = z.enum([
+  "different_units",
+  "different_models",
+  "different_specs",
+  "different_billing",
+  "unknown_configuration",
+  "unknown_model_variant",
+  "stale_quotes",
+  "unavailable",
+]);
 export const searchOutput = z.object({
   ...metadataOutput,
   unit: z.string(),
@@ -89,6 +153,27 @@ export const searchOutput = z.object({
   nextOffset: z.number().nullable(),
   offers: z.array(offerOutput),
   ranking: z.string(),
+  appliedFilters: searchInput,
+  diagnostics: z.object({
+    reason: z.enum([
+      "results",
+      "empty_catalog",
+      "no_listings_for_kind",
+      "only_stale_matches",
+      "no_current_listings",
+      "no_filter_matches",
+      "page_out_of_range",
+    ]),
+    kindListings: z.number().int().nonnegative(),
+    currentListings: z.number().int().nonnegative(),
+    matchingStaleListings: z.number().int().nonnegative(),
+    missingRequiredSpecs: z.number().int().nonnegative(),
+    rejectedByFilter: z.record(
+      z.enum(searchFilterKeys),
+      z.number().int().nonnegative()
+    ),
+    suggestions: z.array(z.string()).max(4),
+  }),
 });
 export const detailOutput = z.object({ ...metadataOutput, offer: offerOutput });
 export const compareOutput = z.object({
@@ -96,6 +181,7 @@ export const compareOutput = z.object({
   offers: z.array(offerOutput),
   comparableUnit: z.boolean(),
   cheapestOfferId: z.string().nullable(),
+  comparisonBlockers: z.array(comparisonBlocker),
 });
 export const costOutput = z.object({
   ...metadataOutput,

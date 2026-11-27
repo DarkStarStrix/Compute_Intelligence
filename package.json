@@ -16,7 +16,7 @@
     "format": "prettier --write client/src shared scripts",
     "audit:deps": "pnpm audit",
     "dev:mcp": "wrangler dev --config mcp/wrangler.jsonc --ip 127.0.0.1 --port 8791",
-    "check:mcp": "vitest run scripts/mcp.test.ts scripts/mcp-data.test.ts scripts/mcp-transport.test.ts",
+    "check:mcp": "vitest run scripts/mcp.test.ts scripts/mcp-data.test.ts scripts/mcp-transport.test.ts scripts/mcp-trust.test.ts",
     "types:mcp": "wrangler types --config mcp/wrangler.jsonc --include-runtime=false --include-main-module=false --strict-vars=false --env-interface ComputeMcpEnv mcp/env.d.ts",
     "deploy:mcp:dev": "wrangler deploy --config mcp/wrangler.jsonc",
     "smoke:mcp": "tsx scripts/mcp-smoke.ts",

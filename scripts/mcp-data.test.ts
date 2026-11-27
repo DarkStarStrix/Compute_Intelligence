@@ -158,3 +158,33 @@ it("rotates the normal catalog cache key each minute without a manual refresh", 
     vi.useRealTimers();
   }
 });
+
+it("rejects upstream redirects and keeps request paths independent of listing text", async () => {
+  let options: RequestInit | undefined;
+  const redirected = createPublishedData(async (_url, init) => {
+    options = init;
+    return new Response(null, {
+      status: 302,
+      headers: { Location: "http://169.254.169.254/" },
+    });
+  });
+  await expect(redirected.current()).rejects.toThrow("unavailable");
+  expect(options?.redirect).toBe("manual");
+  const urls: string[] = [];
+  const data = createPublishedData(async url => {
+    urls.push(url);
+    return Response.json({ snapshotAt: at, points: [] });
+  });
+  await data.history(
+    fixture(),
+    "../../https://169.254.169.254/?x=1",
+    0,
+    now,
+    20
+  );
+  const request = new URL(urls[0]);
+  expect(request.origin).toBe("https://darkstarstrix.github.io");
+  expect(request.pathname).toMatch(
+    /^\/gpu-price-tracker\/data\/mcp\/history\/[a-f0-9]{64}\.json$/
+  );
+});

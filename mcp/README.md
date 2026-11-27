@@ -78,3 +78,15 @@ History covers at most seven days, returns at most 200 real sampled points, pres
 Strict schemas, host/origin checks, a 16 KB request-body bound, bounded upstream reads and a 60 requests/minute per-IP limit protect the public surface. Each MCP exchange gets a fresh SDK server. Logs contain operation/status/error codes and timings, not request bodies or arguments.
 
 See `VERIFICATION.md` for executed evidence and remaining limits. The dev endpoint is ready for trials; no public production MCP release or uptime/load guarantee is implied.
+
+## Trust and search diagnostics (0.3.0)
+
+Search returns `appliedFilters`, including default freshness and pagination values, and `diagnostics`. Empty pages distinguish an empty catalog, no listings of that compute kind, only retained/stale matches, no current listings, no exact filter matches, and an offset beyond the last match. These are statements about the published catalog, never proof that compute does not exist in the market. Source failures remain tool errors, rather than empty search results.
+
+`rejectedByFilter` counts failures independently across all listings of the selected kind. One listing can fail multiple filters; the counts must not be summed. `missingRequiredSpecs` counts listings missing a requested numeric specification. `matchingStaleListings` respects all other filters and uses unknown effective stock for retained quotes. Suggestions describe an explicit next query; they do not change the results or relax constraints.
+
+`gpuModelId` is the exact collector-normalized GPU ID, also returned in offers and searched by the literal query field. `minGpuCount` and `maxGpuCount` filter known physical GPU counts per listed node. They do not mean requested job size, minimum rental or currently available GPU count. Model/count/VRAM filters are GPU-only; incompatible types and inverted count ranges are rejected. vCPU and RAM filters retain their existing meaning. Free-text queries do not parse arbitrary natural-language configuration requests or infer geographic regions.
+
+When `compare_offers.cheapestOfferId` is null, `comparisonBlockers` explains why: unit, canonical model, required specifications, billing, unknown configuration or model variant, stale quotes, or unavailable stock. GPU comparisons require matching known VRAM; CPU/sandbox comparisons require matching known vCPU and RAM. GPU count and rental terms can still differ, so the selection is the lowest comparable unit quote, not a whole-job or performance recommendation. Unknown stock remains unknown even when a quote is current.
+
+The public endpoint accepts one message per HTTP exchange. Legacy JSON-RPC batches are rejected before catalog I/O so one rate-limit decision cannot fan out into many tool calls. Input remains bounded to 16 KB before parsing and dispatch. See `SECURITY.md` for the review evidence, fixed findings and remaining limits. Version 0.3.0 is deployed to the existing dev endpoint and verified with the official SDK.
