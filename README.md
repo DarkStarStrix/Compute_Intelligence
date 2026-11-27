@@ -1,117 +1,159 @@
-# GPU Price Observatory
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="client/public/brand/logo-white.svg">
+    <img src="client/public/brand/logo-color.svg" alt="Compute Intelligence — Find the compute that fits" width="560">
+  </picture>
+</p>
 
-A public GPU price tracker on [GitHub Pages](https://darkstarstrix.github.io/gpu-price-tracker/), with the original Data Observatory dashboard. No accounts, subscriptions, paid server, or database are required.
+<p align="center">
+  Compare cloud compute with clear prices, configurations, sources, and observation times.
+</p>
+
+<p align="center">
+  <a href="https://darkstarstrix.github.io/gpu-price-tracker/">Open the app</a> ·
+  <a href="#connect-your-ai-assistant">Connect MCP</a> ·
+  <a href="https://www.producthunt.com/posts/compute-intelligence">Product Hunt</a> ·
+  <a href="CONTRIBUTING.md">Contribute</a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/DarkStarStrix/gpu-price-tracker/releases/latest"><img src="https://img.shields.io/github/v/release/DarkStarStrix/gpu-price-tracker?color=21abc0" alt="Latest release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-21abc0" alt="MIT license"></a>
+  <a href="https://github.com/DarkStarStrix/gpu-price-tracker/actions/workflows/pages.yml"><img src="https://github.com/DarkStarStrix/gpu-price-tracker/actions/workflows/pages.yml/badge.svg" alt="Collector and Pages deployment status"></a>
+</p>
+
+<p align="center">
+  <a href="https://www.producthunt.com/posts/compute-intelligence"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1332585&amp;theme=neutral" alt="Compute Intelligence on Product Hunt" width="250" height="54"></a>
+</p>
+
+![Compute Intelligence: GPU, CPU, TPU and sandbox pricing](client/public/brand/launch-cover.png)
+
+## Find compute that fits your workload
+
+Compute Intelligence is a free, open-source app for comparing **GPU, CPU, TPU, and sandbox compute** across cloud providers. It collects public provider data and brings pricing, hardware, regions, billing models, and reported availability into one searchable view. No account is needed to browse the app or use the public MCP.
+
+- **Search and filter:** narrow offers by compute type, provider, model, region, resources, billing, and reported stock.
+- **Compare offers:** inspect configurations, per-unit rates, whole-node costs, and rental terms side by side. Share a link to your selection.
+- **Estimate job costs:** enter resource count and runtime; whole-node GPU rentals round up to the number of nodes required.
+- **Explore recorded trends:** inspect listing history and provider movement. Filter for prices that actually moved, including those that returned to their starting price.
+- **Inspect the evidence:** follow source links, observation timestamps, provider profiles, and stale-data labels.
+- **Use your AI assistant:** query the same published data through five read-only MCP tools.
+
+Coverage includes providers such as RunPod, Lambda, CoreWeave, Nebius, Hot Aisle, Lium, Vultr, Hetzner, Google Cloud, Microsoft Azure, E2B, Daytona, Vercel, and Cloudflare. For current coverage, open **Providers** in the app. See [data sources and interpretation](docs/data-sources.md) for adapter-specific details.
+
+## What a quote means
+
+Trust depends on preserving what each source actually reports:
+
+| Detail         | How it is handled                                                                                                             |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Billing units  | GPU, instance, TPU chip, and sandbox rates retain their stated units. Spot and on-demand quotes stay distinct.                |
+| Configurations | Known node size, VRAM, vCPU, RAM, and rental terms are shown. Missing specifications stay unknown.                            |
+| Availability   | A published price does not establish stock. Unknown availability links back to the provider for confirmation.                 |
+| Freshness      | Failed sources retain their previous quotes and original timestamps. Failed-source or over-two-hour quotes are stale.         |
+| History        | Charts use recorded observations. Flat rates stay flat; missing intervals do not become invented price movements.             |
+| Rankings       | Observed price ordering does not receive commercial weighting. Equivalent specifications do not prove equivalent performance. |
+
+Collection is scheduled roughly every 15 minutes through GitHub Actions, with a Cloudflare dispatch backup. Scheduling and publication can be delayed. The app checks for a newer snapshot every minute and when you return to the tab. MCP uses the latest published snapshot; it does not probe providers on demand.
+
+Prices are indicative, not reservations or guarantees of capacity. Confirm stock and final charges with the provider. Cost estimates may exclude taxes, storage, network fees, plan charges, and billing increments not represented in the source.
+
+## Connect your AI assistant
+
+Add this URL to a client that supports **remote MCP over Streamable HTTP**:
+
+```text
+https://compute-intelligence-mcp.allanw-mk.workers.dev/mcp
+```
+
+No API key is required. The service is public, read-only, and rate limited; do not send secrets or private workload details.
+
+| Tool                | Purpose                                                                                                 |
+| ------------------- | ------------------------------------------------------------------------------------------------------- |
+| `search_compute`    | Filter listings by compute type and requirements; inspect applied filters and empty-result diagnostics. |
+| `get_offer`         | Retrieve an exact listing with configuration, price, source, stock, and freshness.                      |
+| `compare_offers`    | Compare 2–5 listings and explain incompatible units, models, specifications, billing, or quote state.   |
+| `estimate_job_cost` | Estimate resource count × runtime while preserving whole-node and minimum-rental requirements.          |
+| `get_price_history` | Retrieve real sampled observations and range statistics for an exact listing.                           |
+
+Try asking:
+
+> Find on-demand H100 SXM listings with at least 80 GB VRAM. Compare three offers, explain their stock and rental terms, estimate six hours for nine GPUs, and show their recorded price history.
+
+Search never silently relaxes requirements. Empty results describe the published catalog, not the entire market. The MCP selects a lowest comparable unit quote only when its compatibility checks pass; it does not promise equal performance or the lowest complete job bill.
+
+See the [MCP guide](mcp/README.md), [trust and security review](mcp/SECURITY.md), and [verification evidence](mcp/VERIFICATION.md) for contracts and limitations.
 
 ## Run locally
 
-Use Node 22.12+ and pnpm 10.4.1:
+Requires **Node.js 22.12+** and **pnpm 10.4.1**.
 
 ```sh
+git clone https://github.com/DarkStarStrix/gpu-price-tracker.git
+cd gpu-price-tracker
 pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-The committed `client/public/data/latest.json` provides real observations without credentials. To refresh it from the public providers:
+The committed snapshot lets you develop without provider credentials or a cloud account. Use the local URL printed by Vite.
 
 ```sh
-pnpm collect
-pnpm check
-pnpm test
-pnpm build:pages
-pnpm preview
+pnpm check             # TypeScript
+pnpm test              # Offline regression suite
+pnpm build:pages       # Build for /gpu-price-tracker/
+pnpm dev:mcp           # Local MCP at http://127.0.0.1:8791/mcp
+pnpm smoke:mcp         # Exercise all five tools against the local MCP
 ```
 
-`pnpm build` builds for the root URL; `pnpm build:pages` builds for `/gpu-price-tracker/`. Source formatting is available with `pnpm format`; `pnpm audit:deps` checks current dependency advisories.
+The local MCP reads the live published feed and requires network access. `pnpm collect` contacts configured public sources and rewrites the committed snapshot; it is not needed for routine UI development. `pnpm build` targets a root URL, while `pnpm build:pages` targets GitHub Pages.
 
-## Public data coverage
+## Architecture and deployment
 
-| Provider        | Collected data                           | Important interpretation                                                                                                |
-| --------------- | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| RunPod          | Public GraphQL catalog and stock reports | Secure and Community are separate cloud tiers; catalog prices are per GPU-hour, with no asserted node configuration.    |
-| CoreWeave       | Official regional on-demand price tables | Node rates are divided by GPU count once. Spot, inference, CPU and quote-only rows are excluded.                        |
-| Paperspace      | Official DigitalOcean machine pricing    | Conflicting multi-GPU prices and ambiguous model labels are excluded explicitly.                                        |
-| Hyperstack      | Official on-demand GPU price cards       | Maximum CPU/RAM specifications are not presented as allocated resources.                                                |
-| Verda           | Official regular single-GPU instances    | Distinct CPU/RAM configurations retain separate listing identities.                                                     |
-| Crusoe          | Official current on-demand rates         | Future December 1 prices are excluded; collection stops at that transition until the parser is reviewed.                |
-| Vultr           | Public plans endpoint                    | Node prices and total VRAM are normalized per GPU; empty locations do not prove availability.                           |
-| Nebius          | Public spot prices and hourly history    | Interruptible spot prices remain separate from on-demand comparisons.                                                   |
-| Runcrate        | Public GPU pricing feed                  | Lowest listed per-GPU rate per type. Types with no orderable option are excluded; no node configuration is asserted.    |
-| Hot Aisle       | Official MI300X pricing                  | Published per-GPU rates for 1-, 2- and 4-GPU VMs and 8-GPU bare metal.                                                  |
-| Lambda          | Official GPU instance pricing            | On-demand per-GPU rates by node size. Regional stock is not published in the rate card.                                 |
-| DigitalOcean    | Official GPU Droplet pricing             | On-demand and spot node rates, with 1- and 8-GPU SKUs kept separate.                                                    |
-| Civo            | Official NVIDIA GPU pricing              | On-demand hourly node rates. Commitment-only plans are excluded.                                                        |
-| Jarvislabs      | Official USD instance pricing            | Single-GPU on-demand and spot rates from the public USD table.                                                          |
-| Massed Compute  | Official on-demand GPU pricing           | Published node configurations and hourly rates. Quote-only configurations are excluded.                                 |
-| Lium            | Public nodes API                         | Secure and Spot node rates, free GPU counts, and minimum rentable GPU counts. Rented nodes retain their observed price. |
-| GPU.ai          | Public pricing and GPU types APIs        | Whole configuration rates, stock counts, and Community or Secure tier.                                                  |
-| OpenRelay       | Public GPU catalog API                   | Community and Verified USD per-GPU rates with no stock claim.                                                           |
-| Akamai Cloud    | Public Linode plans API                  | Published hourly VM rates and GPU counts.                                                                               |
-| Oracle Cloud    | OCI price list API                       | GPU compute meters in USD. Separate software license meters and shapes with ambiguous hardware are excluded.            |
-| Microsoft Azure | Retail Prices API                        | Selected Linux VM SKUs in East US, Central US, and West US 2. On-demand and Spot rates are separate.                    |
-| Thunder Compute | Public instance pricing                  | Single-GPU on-demand compute rates. Sandboxes and optional add-ons are excluded.                                        |
-| OVHcloud        | US public cloud price list               | Hourly GPU VM prices from the US catalog.                                                                               |
-| Canopy Wave     | Public GPU cloud price table             | Per-GPU hourly prices with whole instance counts. Quote-only rows are excluded.                                         |
-| Latitude.sh     | Public metal GPU plan table              | Starting hourly bare-metal prices. Specific regions may differ.                                                         |
-| Denvr Dataworks | Public GPU cloud price table             | On-demand rates for whole accelerators. Reserved-only and fractional MIG configurations are excluded.                   |
-| Oblivus         | Public GPU configurations and pricing    | On-demand per-GPU prices with configured node sizes.                                                                    |
-| Google Cloud    | Accelerator-optimized VM price table     | USD on-demand and Spot reference rates for full-GPU instances. Commitments and fractional GPUs are excluded.            |
-| Spheron AI      | Public paginated marketplace API        | On-demand and Spot node rates with provider-reported stock and regions.                                                 |
-| VoltageGPU      | Public price and stock snapshot         | Standard price floors have unspecified machine sizes. Confidential VMs and dedicated nodes retain their full counts.    |
-| Sixtytwo        | Public capacity listings                | Exact USD per-GPU-hour lease quotes appear on the profile with quantity, term and published ready date.                |
-| Sesterce        | Public compute catalog                   | Starting configuration rates are divided by the node's GPU count. Regional stock is unverified.                        |
+```mermaid
+flowchart LR
+  Sources[Official provider sources] --> Collector[Scheduled collector]
+  Collector --> Snapshot[Validated observations]
+  Snapshot --> Pages[GitHub Pages publication]
+  Pages --> App[Web app]
+  Pages --> MCP[Cloudflare MCP Worker]
+  MCP --> Clients[AI assistants]
+```
 
-The disconnected Prime Intellect, TensorDock and Fluidstack adapters have been removed. Historical observations and Git history are retained. Adding a provider requires a verified first-party data contract and parser tests; credentials must never enter frontend assets.
+The collector owns provider I/O and durable observations. The website and MCP reuse shared schemas, listing conversion, freshness rules, and cost calculations. MCP catalog and history reads must refer to the same publication; inconsistent or unavailable data produces an explicit error.
 
-Pricing pages establish a published rate, not stock. Missing stock becomes a **Check stock** link; explicit available/limited/unavailable reports keep their colored indicators. Failed or old observations remain visible in Offers with their actual timestamps and never count as current market data. Overview, comparisons and provider inventory retain their last observed prices with explicit stale labels when fresh data is unavailable. Old stock reports become stock-check links. The freshness limit is two hours.
+| Component                                      | Location                                          |
+| ---------------------------------------------- | ------------------------------------------------- |
+| React app and static assets                    | [`client/`](client/)                              |
+| Shared data, pricing, and validation contracts | [`shared/`](shared/)                              |
+| Collector, adapters, fixtures, and tests       | [`scripts/`](scripts/)                            |
+| Public MCP Worker and tool contracts           | [`mcp/`](mcp/)                                    |
+| Collector dispatch backup                      | [`refresh/`](refresh/)                            |
+| Optional notification and analytics services   | [`alerts/`](alerts/) · [`analytics/`](analytics/) |
 
-## Updates, history and comparison
+The website runs on **GitHub Pages**; the public MCP runs on **Cloudflare Workers**. There is no separate always-on provider server or database required for browsing or MCP queries. Optional watchlists and private analytics have separate service requirements.
 
-GitHub Actions is scheduled to collect around the clock at minutes 8/23/38/53 UTC, then commit observations, build, and deploy Pages. GitHub can delay or skip scheduled runs. The browser checks the published snapshot every minute and when returning to the tab. **Refresh** checks immediately and reports whether a newer snapshot arrived. **Run collector on GitHub** opens the workflow, where users with repository write access can select **Run workflow**. Refresh the dashboard after deployment completes.
+See [operations and deployment](docs/operations.md) and [architecture contracts](ARCHITECTURE.md).
 
-The Cloudflare backup checks at minutes 12/27/42/57 UTC. If the workflow is idle and no run for that slot has succeeded, it dispatches the same GitHub Actions workflow. Configure the Worker with a repository-scoped fine-grained GitHub token that grants **Actions: Read and write**, stored as the `GITHUB_ACTIONS_TOKEN` Worker secret. Deploy with `pnpm dlx wrangler@4.160.1 deploy --config refresh/wrangler.jsonc`. The backup still depends on GitHub Actions accepting and running dispatched jobs. Cloudflare logs a warning during the final seven days when GitHub reports the token expiration. Rotate the secret before that date and confirm a scheduled dispatch publishes a fresh snapshot. Each Pages deployment checks that the public snapshot matches the one built in that run.
+## Contribute a provider or improvement
 
-The **Providers** tab creates a profile for every source in the published snapshot and updates in place as newer snapshots arrive. Listings, regions, billing models, prices, and refresh status come from the snapshot. CPU coverage includes Spheron AI, VoltageGPU, Akamai, DigitalOcean, Vultr, Hetzner, Civo, OVHcloud, and Paperspace. Sandbox coverage includes VoltageGPU, E2B, Daytona, Modal, boat, Vercel, Cloudflare, Freestyle, Blaxel, and Northflank. **Source details** links to the pricing evidence and shows the latest check time. The card's **Updated** time records the last successful check.
+Start with [CONTRIBUTING.md](CONTRIBUTING.md). Provider onboarding has a [standardized data-only PR template](.github/PULL_REQUEST_TEMPLATE/provider.md), a [submission format](provider-submissions/README.md), and a [maintainer integration guide](docs/provider-onboarding.md). A submission does not modify the backend collector; maintainers implement and review the integration separately.
 
-CPU, TPU, and sandbox listings reuse the offers table, comparison, calculator, trends, and watchlists. Each category shows its own billing unit. Sandbox estimates cover the resources shown, with plan, storage, and usage caveats on the listing. Vercel and Cloudflare estimates assume full CPU activity. Their CPU charge falls with active time, while provisioned resources have separate meters. Price history begins with the first successful observation. Restock watches require a source that reports availability.
+[Request a provider](https://github.com/DarkStarStrix/gpu-price-tracker/issues/new?template=provider.yml) or [report an issue](https://github.com/DarkStarStrix/gpu-price-tracker/issues). Do not include credentials, private account data, or usable exploit details in public reports. See [security review and boundaries](mcp/SECURITY.md).
 
-The hero tracks the current H100 SXM floor with separate spot/on-demand selectors. Trends displays real prices for an exact listing with 1H/24H/7D ranges, sample inspection, start and end sliders, high/low/change and sample count. A flat price remains flat. Nebius imports provider hourly-last observations; other providers accumulate samples through collection. No prices are interpolated to manufacture movement.
+## Support the project
 
-**Price movers only** shows listings with at least two different recorded prices in the selected period, including listings that returned to their starting price.
+Compute Intelligence remains free to use. Optional provider referrals and sponsorships help support maintenance. Referral links are disclosed; commercial relationships do not influence price ordering or technical acceptance of providers. RunPod referrals currently provide compute credits, subject to its eligibility rules.
 
-The provider movement timeline replays recorded listing additions/removals, price changes, stock changes and counts. The Offers page filters current listings by GPU, billing, cloud tier, stock and region. Comparison supports two or three current listing IDs, follows them across refreshes, and removes disappeared IDs. Mixed GPU/billing comparisons are labeled.
+Interested in sponsoring development? Use the [sponsorship inquiry](https://github.com/DarkStarStrix/gpu-price-tracker/issues/new?template=sponsorship.yml). See [support and monetization](docs/monetization.md) for configuration and disclosure rules.
 
-**Copy share link** restores exact listing IDs, filters and the selected history period. Open **Estimate job cost** for one listing or a comparison to apply the observed rate to a GPU count and runtime. Whole-node offers are rounded up to whole nodes. Lium's split rentals use the provider's minimum GPU count. A per-GPU quote with an unreported node size is labeled as an estimate.
+## Built with
 
-In-tab price alerts remain available. Background price and stock watchlists require the optional Worker service and browser notification permission. See [watchlist activation](alerts/README.md). CSV export protects spreadsheet cells from formula injection.
+<p>
+  <img src="https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&amp;logoColor=white" alt="TypeScript">
+  <img src="https://img.shields.io/badge/React-149ECA?logo=react&amp;logoColor=white" alt="React">
+  <img src="https://img.shields.io/badge/Vite-646CFF?logo=vite&amp;logoColor=white" alt="Vite">
+  <img src="https://img.shields.io/badge/Cloudflare-F38020?logo=cloudflare&amp;logoColor=white" alt="Cloudflare Workers">
+  <img src="https://img.shields.io/badge/GitHub_Pages-222222?logo=github&amp;logoColor=white" alt="GitHub Pages">
+</p>
 
-## Ownership and failure behavior
-
-- `shared/catalog.ts` owns snapshot validation, prices, timestamps and provenance.
-- `scripts/http.ts` owns bounded provider requests; adapters own extraction and units.
-- `scripts/collect.ts` owns provider replacement, seven-day history and local atomic publication.
-- `shared/browser-snapshot.ts` reads expanded and compact durable snapshots, preserving individual observations and source provenance. It also derives the current catalog and chart files. `client/src/lib/catalog.ts` owns browser loading, revision matching, refresh serialization and subscriptions.
-- `shared/market.ts`, `shared/movement.ts` and `shared/offer-view.ts` own market calculations and filters.
-
-Success replaces a provider's full listing set, including an authoritative empty set. Failure preserves the last verified offers without advancing their timestamps or inventing history. Malformed previous snapshots stop collection. Provider exception text is not published. Public source payloads and receipts are retained separately as a one-day Actions artifact, including rejected pages for diagnosis.
-
-See [ARCHITECTURE.md](ARCHITECTURE.md) for contracts, failure modes and release gates. Official logo source URLs are recorded in `client/public/images/providers/SOURCES.json`. The decorative GPU illustration is a refined derivative of the user-supplied drawing, not an engineering specification.
-
-## GitHub Pages deployment
-
-1. In repository **Settings → Pages**, select **GitHub Actions** as the source.
-2. Push verified changes to `main`, or run **Refresh prices and deploy Pages** manually.
-3. Check both the build and deploy jobs in Actions; a local build alone does not publish the site.
-
-The workflow uses Node 22, a frozen pnpm lockfile, type checking, tests, collection and a Pages build. Only the build job can commit observations; only the deployment job receives Pages/OIDC write permissions. Collection needs no Actions secrets. Keep the committed snapshot and fixtures: they are data and parser evidence, not build output.
-
-## Optional project support
-
-Support, provider referrals, and sponsor acknowledgments are controlled by public settings in `client/src/config/support.ts`. See [support setup](docs/monetization.md). Payments are handled by an external Stripe Payment Link; the dashboard remains free to use. No payment secrets belong in this repository.
-
-## Add your provider or contribute
-
-GPU, CPU, TPU, and sandbox integrations are welcome. Start with [contribution instructions](CONTRIBUTING.md) and the [provider onboarding guide](docs/provider-onboarding.md), then submit one data-only JSON file using the provider PR template. Provider PRs do not change collector code; maintainers wire new sources in a separate reviewed integration. You can also [request a provider](https://github.com/DarkStarStrix/gpu-price-tracker/issues/new?template=provider.yml) with official pricing sources. Listing does not require sponsorship or referral enrollment.
-
-## Private product analytics
-
-The optional [analytics layer](analytics/README.md) measures session-level discovery, comparisons and direct provider clicks without changing price collection. Return-visit identifiers require opt-in through **Privacy & analytics**. Its D1 database is separate from watchlists; private reports use the existing Cloudflare D1 console without extra Access onboarding. Custom event delivery stays disabled until `ANALYTICS_API_URL` is configured for the Pages build.
+[MIT licensed](LICENSE). Provider trademarks belong to their respective owners; their inclusion does not imply endorsement.
