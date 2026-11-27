@@ -20,7 +20,8 @@
     "types:mcp": "wrangler types --config mcp/wrangler.jsonc --include-runtime=false --include-main-module=false --strict-vars=false --env-interface ComputeMcpEnv mcp/env.d.ts",
     "deploy:mcp:dev": "wrangler deploy --config mcp/wrangler.jsonc",
     "smoke:mcp": "tsx scripts/mcp-smoke.ts",
-    "smoke:mcp:refresh": "tsx scripts/mcp-refresh-smoke.ts"
+    "smoke:mcp:refresh": "tsx scripts/mcp-refresh-smoke.ts",
+    "deploy:mcp": "wrangler deploy --config mcp/wrangler.jsonc --env production"
   },
   "dependencies": {
     "@block65/webcrypto-web-push": "2.0.0",

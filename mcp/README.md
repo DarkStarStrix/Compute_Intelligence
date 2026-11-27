@@ -1,8 +1,10 @@
-# Compute Intelligence MCP — live development service
+# Compute Intelligence MCP
 
 Read-only compute discovery over Streamable HTTP. The five tools reuse the existing catalog schema, freshness rules, compute-listing conversion and whole-node cost calculator.
 
 ## Connect
+
+Public MCP: `https://compute-intelligence-mcp.allanw-mk.workers.dev/mcp`
 
 Remote dev MCP: `https://compute-intelligence-mcp-dev.allanw-mk.workers.dev/mcp`
 
@@ -69,7 +71,7 @@ pnpm smoke:mcp https://compute-intelligence-mcp-dev.allanw-mk.workers.dev/mcp
 pnpm smoke:mcp:refresh https://compute-intelligence-mcp-dev.allanw-mk.workers.dev/mcp
 ```
 
-`smoke:mcp` uses the official MCP client SDK to call all five tools. `smoke:mcp:refresh` keeps one client connected for up to 20 minutes, waits for a newer publication, then checks all five tools against that publication. `types:mcp` generates binding declarations. `deploy:mcp:dev` deploys only the dev Worker, not Pages or the collector.
+`smoke:mcp` uses the official MCP client SDK to call all five tools. `smoke:mcp:refresh` keeps one client connected for up to 20 minutes, waits for a newer publication, then checks all five tools against that publication. `types:mcp` generates binding declarations. `deploy:mcp:dev` deploys only the dev Worker. `pnpm deploy:mcp` deploys the stable public Worker using `--env production`, with its own host allowlist and rate-limit namespace. Neither command deploys Pages or the collector.
 
 Search requires a compute kind, uses exact case-insensitive region names and never treats unknown hardware fields as satisfying a minimum. Pricing units, spot/on-demand billing, node size, minimum rental and provider terms remain explicit. Cost estimates exclude unrepresented taxes, plan/storage/network fees and billing increments. A cheapest unit quote is not a performance recommendation or a guaranteed complete job bill.
 
@@ -77,7 +79,7 @@ History covers at most seven days, returns at most 200 real sampled points, pres
 
 Strict schemas, host/origin checks, a 16 KB request-body bound, bounded upstream reads and a 60 requests/minute per-IP limit protect the public surface. Each MCP exchange gets a fresh SDK server. Logs contain operation/status/error codes and timings, not request bodies or arguments.
 
-See `VERIFICATION.md` for executed evidence and remaining limits. The dev endpoint is ready for trials; no public production MCP release or uptime/load guarantee is implied.
+See `VERIFICATION.md` for executed evidence and remaining limits. The public and dev endpoints share the read-only implementation and published feed. No uptime or sustained-load guarantee is implied.
 
 ## Trust and search diagnostics (0.3.0)
 

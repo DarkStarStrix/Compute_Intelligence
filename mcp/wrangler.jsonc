@@ -6,6 +6,7 @@
   "workers_dev": true,
   "preview_urls": false,
   "vars": {
+    "ENVIRONMENT": "development",
     "ALLOWED_ORIGINS": "http://127.0.0.1:8791,http://localhost:8791,https://darkstarstrix.github.io",
     "ALLOWED_HOSTS": "127.0.0.1:8791,localhost:8791,compute-intelligence-mcp-dev.allanw-mk.workers.dev",
   },
@@ -19,6 +20,24 @@
       },
     },
   ],
+  "env": {
+    "production": {
+      "name": "compute-intelligence-mcp",
+      "compatibility_date": "2026-11-27",
+      "vars": {
+        "ENVIRONMENT": "production",
+        "ALLOWED_ORIGINS": "https://darkstarstrix.github.io",
+        "ALLOWED_HOSTS": "compute-intelligence-mcp.allanw-mk.workers.dev",
+      },
+      "ratelimits": [
+        {
+          "name": "IP_LIMIT",
+          "namespace_id": "1052",
+          "simple": { "limit": 60, "period": 60 },
+        },
+      ],
+    },
+  },
   "observability": {
     "enabled": true,
     "head_sampling_rate": 0.1,

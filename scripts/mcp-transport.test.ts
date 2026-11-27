@@ -2,6 +2,7 @@ import { it, expect, vi } from "vitest";
 import { createWorker } from "../mcp/worker";
 import { dataFor } from "./fixtures/mcp";
 const env: ComputeMcpEnv = {
+  ENVIRONMENT: "development",
   ALLOWED_ORIGINS: "http://127.0.0.1:8791",
   ALLOWED_HOSTS: "127.0.0.1:8791",
   IP_LIMIT: { limit: async () => ({ success: true }) },
@@ -262,4 +263,53 @@ it("reports cross-field input validation before any provider I/O", async () => {
     expect(message).not.toContain("Published data");
   }
   expect(current).not.toHaveBeenCalled();
+});
+
+it("reports the production environment and rejects dev hosts on the public configuration", async () => {
+  const worker = createWorker(dataFor());
+  const production = {
+    ...env,
+    ENVIRONMENT: "production",
+    ALLOWED_HOSTS: "compute-intelligence-mcp.allanw-mk.workers.dev",
+    ALLOWED_ORIGINS: "https://darkstarstrix.github.io",
+  };
+  const response = await worker.fetch(
+    new Request(
+      "https://compute-intelligence-mcp.allanw-mk.workers.dev/health"
+    ),
+    production
+  );
+  expect(response.status).toBe(200);
+  expect((await response.json()).environment).toBe("production");
+  expect((await worker.fetch(req("tools/list"), production)).status).toBe(403);
+});
+
+it("isolates a bounded concurrent request burst against fixture data", async () => {
+  const worker = createWorker(dataFor());
+  for (let round = 0; round < 10; round++) {
+    const results = await Promise.all(
+      Array.from({ length: 10 }, async (_, i) => {
+        const id = round * 10 + i + 1;
+        const response = await worker.fetch(
+          req(
+            "tools/call",
+            {
+              name: "get_offer",
+              arguments: { offerId: i % 2 ? "node" : "single" },
+            },
+            id
+          ),
+          env
+        );
+        expect(response.status).toBe(200);
+        const result = await body(response);
+        expect(result.id).toBe(id);
+        expect(result.result.structuredContent.offer.offerId).toBe(
+          i % 2 ? "node" : "single"
+        );
+        return result;
+      })
+    );
+    expect(results).toHaveLength(10);
+  }
 });

@@ -43,7 +43,7 @@ export function createWorker(data?: Parameters<typeof createServer>[0]) {
         return Response.json(
           {
             service: "compute-intelligence-mcp",
-            environment: "development",
+            environment: env.ENVIRONMENT,
             version: "0.3.0",
             readOnly: true,
             dataMode: "published-snapshot",
