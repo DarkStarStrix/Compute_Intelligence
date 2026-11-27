@@ -1,3 +1,4 @@
+import { mcpDataUrl } from "../shared/project";
 import { createMcpHandler } from "@modelcontextprotocol/server";
 import type { ExecutionContext } from "@cloudflare/workers-types";
 import { createServer } from "./server";
@@ -47,8 +48,7 @@ export function createWorker(data?: Parameters<typeof createServer>[0]) {
             version: "0.3.0",
             readOnly: true,
             dataMode: "published-snapshot",
-            dataSource:
-              "https://darkstarstrix.github.io/gpu-price-tracker/data/mcp/",
+            dataSource: mcpDataUrl,
           },
           { headers }
         );

@@ -1,3 +1,4 @@
+import { project } from "../shared/project";
 import { createHash } from "node:crypto";
 import { buildPushPayload } from "@block65/webcrypto-web-push";
 import { snapshotSchema } from "../shared/catalog";
@@ -9,7 +10,7 @@ import {
 } from "../shared/watchlist";
 import { evaluateWatches } from "./evaluate";
 
-const SITE = "https://darkstarstrix.github.io/gpu-price-tracker/";
+const SITE = project.site;
 const worker = process.env.WATCH_API_URL;
 const token = process.env.WATCH_DISPATCH_TOKEN;
 const vapid = {
@@ -17,6 +18,12 @@ const vapid = {
   publicKey: process.env.WATCH_VAPID_PUBLIC ?? "",
   privateKey: process.env.WATCH_VAPID_PRIVATE ?? "",
 };
+
+class DispatchError extends Error {
+  constructor(code: string, status?: number) {
+    super(`${code}${status === undefined ? "" : ` (HTTP ${status})`}`);
+  }
+}
 
 async function request(
   path: string,
@@ -34,7 +41,7 @@ async function request(
   });
   if (response.status === 409 && update) return null;
   if (!response.ok)
-    throw new Error(`Watchlist service returned ${response.status}`);
+    throw new DispatchError("watchlist_service_unavailable", response.status);
   return response.json();
 }
 
@@ -73,7 +80,7 @@ async function send(device: WatchDevice, event: WatchEvent) {
 
 async function main() {
   if (!worker || !token || !vapid.publicKey || !vapid.privateKey)
-    throw new Error("Watchlist delivery configuration is incomplete");
+    throw new DispatchError("delivery_configuration_incomplete");
   const response = await fetch(
     new URL(`data/current.json?checked=${Date.now()}`, SITE),
     {
@@ -81,8 +88,11 @@ async function main() {
       signal: AbortSignal.timeout(20_000),
     }
   );
-  if (!response.ok) throw new Error("Published price snapshot is unavailable");
-  const snapshot = snapshotSchema.parse(await response.json());
+  if (!response.ok)
+    throw new DispatchError("published_snapshot_unavailable", response.status);
+  const parsed = snapshotSchema.safeParse(await response.json());
+  if (!parsed.success) throw new DispatchError("published_snapshot_invalid");
+  const snapshot = parsed.data;
   let after = "";
   let delivered = 0;
   let retry = 0;
@@ -147,9 +157,9 @@ async function main() {
   if (retry) process.exitCode = 1;
 }
 
-main().catch(() => {
+main().catch((error: unknown) => {
   console.error(
-    "Watchlist delivery could not complete. Check the service configuration and published catalog."
+    `Watchlist delivery could not complete: ${error instanceof DispatchError ? error.message : "unexpected_transport_or_response_failure"}.`
   );
   process.exitCode = 1;
 });

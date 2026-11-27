@@ -4,7 +4,7 @@ Compute Intelligence publishes public provider observations through a static web
 
 ## Supported release
 
-Report issues against the latest [GitHub release](https://github.com/DarkStarStrix/gpu-price-tracker/releases/latest) and current public service. The application and MCP server have separate version numbers; include both when known. Older snapshots and development endpoints are not separate supported release lines.
+Report issues against the latest [GitHub release](https://github.com/DarkStarStrix/Compute_Intelligence/releases/latest) and current public service. The application and MCP server have separate version numbers; include both when known. Older snapshots and development endpoints are not separate supported release lines.
 
 ## Report a vulnerability
 

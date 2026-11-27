@@ -1,9 +1,7 @@
+import { project, snapshotUrl } from "../shared/project";
 import type { ExportedHandler } from "@cloudflare/workers-types";
 
-const workflow =
-  "https://api.github.com/repos/DarkStarStrix/gpu-price-tracker/actions/workflows/pages.yml";
-const snapshotUrl =
-  "https://darkstarstrix.github.io/gpu-price-tracker/data/current.json";
+const workflow = project.workflow;
 const graceMs = 4 * 60_000;
 const snapshotOverdueMs = 45 * 60_000;
 const expiryWarningMs = 7 * 24 * 60 * 60_000;

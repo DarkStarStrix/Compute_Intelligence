@@ -23,7 +23,7 @@ The existing GitHub collector runs on its existing schedule, persists source obs
 - `data/mcp/catalog.json`: the complete current catalog with original timestamps/source statuses, without the large history array.
 - `data/mcp/history/<sha256-of-offer-id>.json`: small per-listing history files, tagged with the same publication timestamp.
 
-The dev Worker fetches these files from `https://darkstarstrix.github.io/gpu-price-tracker/data/mcp/`. It has no pinned dataset or asset binding. Its code does not redeploy when data changes. The website stays on GitHub Pages; collector provider-fetching and scheduling logic are unchanged.
+The dev Worker fetches these files from `https://darkstarstrix.github.io/Compute_Intelligence/data/mcp/`. It has no pinned dataset or asset binding. Its code does not redeploy when data changes. The website stays on GitHub Pages; collector provider-fetching and scheduling logic are unchanged.
 
 Normal catalog requests rotate a cache key every minute with a 60-second edge TTL. This avoids retaining the old Pages response behind its default cache headers. Catalog/history generations must match. If publication changes between reads, history retries once with a cache-bypassed catalog; it never combines mismatched generations or silently falls back to old data.
 

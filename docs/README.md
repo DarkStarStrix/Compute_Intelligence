@@ -6,7 +6,7 @@
 - [MCP connection and tool examples](../mcp/USAGE.md): connect a remote client, search configurations, compare listings, estimate costs and inspect history.
 - [MCP troubleshooting](../mcp/TROUBLESHOOTING.md): connection failures, empty results, comparison blockers, quotas and stale data.
 - [Provider data and interpretation](data-sources.md): source-specific normalization and coverage caveats.
-- [Releases](https://github.com/DarkStarStrix/gpu-price-tracker/releases) and [changelog](../CHANGELOG.md).
+- [Releases](https://github.com/DarkStarStrix/Compute_Intelligence/releases) and [changelog](../CHANGELOG.md).
 
 ## Security and trust
 

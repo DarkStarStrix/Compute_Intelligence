@@ -1,3 +1,4 @@
+import { mcpDataUrl } from "../shared/project";
 import { z } from "zod";
 import { snapshotSchema, type Snapshot } from "../shared/catalog";
 import { readBounded, type BoundedBody } from "../analytics/http";
@@ -67,7 +68,7 @@ type DataFetch = (
 // Fixed published data root; callers cannot supply arbitrary upstream URLs.
 export function createPublishedData(
   fetcher: DataFetch = fetch,
-  baseUrl = "https://darkstarstrix.github.io/gpu-price-tracker/data/mcp/"
+  baseUrl = mcpDataUrl
 ): ComputeData {
   async function get(file: string, maxBytes: number) {
     const options = {

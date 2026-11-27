@@ -10,16 +10,16 @@
 </p>
 
 <p align="center">
-  <a href="https://darkstarstrix.github.io/gpu-price-tracker/">Open the app</a> ·
+  <a href="https://darkstarstrix.github.io/Compute_Intelligence/">Open the app</a> ·
   <a href="#connect-your-ai-assistant">Connect MCP</a> ·
   <a href="https://www.producthunt.com/posts/compute-intelligence">Product Hunt</a> ·
   <a href="CONTRIBUTING.md">Contribute</a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/DarkStarStrix/gpu-price-tracker/releases/latest"><img src="docs/assets/badges/release.svg" alt="Latest release"></a>
+  <a href="https://github.com/DarkStarStrix/Compute_Intelligence/releases/latest"><img src="docs/assets/badges/release.svg" alt="Latest release"></a>
   <a href="LICENSE"><img src="docs/assets/badges/license.svg" alt="MIT license"></a>
-  <a href="https://github.com/DarkStarStrix/gpu-price-tracker/actions/workflows/pages.yml"><img src="https://github.com/DarkStarStrix/gpu-price-tracker/actions/workflows/pages.yml/badge.svg" alt="Collector and Pages deployment status"></a>
+  <a href="https://github.com/DarkStarStrix/Compute_Intelligence/actions/workflows/pages.yml"><img src="https://github.com/DarkStarStrix/Compute_Intelligence/actions/workflows/pages.yml/badge.svg" alt="Collector and Pages deployment status"></a>
 </p>
 
 <p align="center">
@@ -91,8 +91,8 @@ See the [MCP quick start](mcp/USAGE.md), [troubleshooting](mcp/TROUBLESHOOTING.m
 Requires **Node.js 22.12+** and **pnpm 10.4.1**.
 
 ```sh
-git clone https://github.com/DarkStarStrix/gpu-price-tracker.git
-cd gpu-price-tracker
+git clone https://github.com/DarkStarStrix/Compute_Intelligence.git
+cd Compute_Intelligence
 pnpm install --frozen-lockfile
 pnpm dev
 ```
@@ -102,7 +102,7 @@ The committed snapshot lets you develop without provider credentials or a cloud 
 ```sh
 pnpm check             # TypeScript
 pnpm test              # Offline regression suite
-pnpm build:pages       # Build for /gpu-price-tracker/
+pnpm build:pages       # Build for /Compute_Intelligence/
 pnpm dev:mcp           # Local MCP at http://127.0.0.1:8791/mcp
 pnpm smoke:mcp         # Exercise all five tools against the local MCP
 ```
@@ -140,13 +140,13 @@ See the [documentation index](docs/README.md), [operations and deployment](docs/
 
 Start with [CONTRIBUTING.md](CONTRIBUTING.md). Provider onboarding has a [standardized data-only PR template](.github/PULL_REQUEST_TEMPLATE/provider.md), a [submission format](provider-submissions/README.md), and a [maintainer integration guide](docs/provider-onboarding.md). A submission does not modify the backend collector; maintainers implement and review the integration separately.
 
-[Request a provider](https://github.com/DarkStarStrix/gpu-price-tracker/issues/new?template=provider.yml) or [report an issue](https://github.com/DarkStarStrix/gpu-price-tracker/issues). Do not include credentials, private account data, or usable exploit details in public reports. See the [security reporting policy](SECURITY.md) and [MCP security boundaries](mcp/SECURITY.md).
+[Request a provider](https://github.com/DarkStarStrix/Compute_Intelligence/issues/new?template=provider.yml) or [report an issue](https://github.com/DarkStarStrix/Compute_Intelligence/issues). Do not include credentials, private account data, or usable exploit details in public reports. See the [security reporting policy](SECURITY.md) and [MCP security boundaries](mcp/SECURITY.md).
 
 ## Support the project
 
 Compute Intelligence remains free to use. Optional provider referrals and sponsorships help support maintenance. Referral links are disclosed; commercial relationships do not influence price ordering or technical acceptance of providers. RunPod referrals currently provide compute credits, subject to its eligibility rules.
 
-Interested in sponsoring development? Use the [sponsorship inquiry](https://github.com/DarkStarStrix/gpu-price-tracker/issues/new?template=sponsorship.yml). See [support and monetization](docs/monetization.md) for configuration and disclosure rules.
+Interested in sponsoring development? Use the [sponsorship inquiry](https://github.com/DarkStarStrix/Compute_Intelligence/issues/new?template=sponsorship.yml). See [support and monetization](docs/monetization.md) for configuration and disclosure rules.
 
 ## Built with
 

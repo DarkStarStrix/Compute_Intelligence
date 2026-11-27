@@ -1,3 +1,4 @@
+import { projectUrls } from "./shared/project";
 import { mcpSnapshotFiles } from "./shared/mcp-snapshot";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
@@ -11,7 +12,9 @@ import {
 } from "./shared/browser-snapshot";
 
 const githubPages = process.env.GITHUB_PAGES === "true";
-const base = githubPages ? "/gpu-price-tracker/" : "/";
+const base = githubPages
+  ? projectUrls(process.env.GITHUB_REPOSITORY).base
+  : "/";
 let revision = "";
 
 export default defineConfig({

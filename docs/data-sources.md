@@ -1,6 +1,6 @@
 # Provider data and interpretation
 
-Compute Intelligence reads public APIs and official pricing pages. This guide records GPU adapter behavior; the live [provider profiles](https://darkstarstrix.github.io/gpu-price-tracker/) show the sources in the latest published snapshot. Coverage and successful refreshes can change.
+Compute Intelligence reads public APIs and official pricing pages. This guide records GPU adapter behavior; the live [provider profiles](https://darkstarstrix.github.io/Compute_Intelligence/) show the sources in the latest published snapshot. Coverage and successful refreshes can change.
 
 | Provider        | Collected data                           | Important interpretation                                                                                                |
 | --------------- | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |

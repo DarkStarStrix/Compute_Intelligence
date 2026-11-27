@@ -19,7 +19,7 @@
   },
   "vars": {
     "SITE_ORIGIN": "https://darkstarstrix.github.io",
-    "SNAPSHOT_URL": "https://darkstarstrix.github.io/gpu-price-tracker/data/current.json",
+    "SNAPSHOT_URL": "https://darkstarstrix.github.io/Compute_Intelligence/data/current.json",
   },
   "d1_databases": [
     {

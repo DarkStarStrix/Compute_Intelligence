@@ -185,6 +185,6 @@ it("rejects upstream redirects and keeps request paths independent of listing te
   const request = new URL(urls[0]);
   expect(request.origin).toBe("https://darkstarstrix.github.io");
   expect(request.pathname).toMatch(
-    /^\/gpu-price-tracker\/data\/mcp\/history\/[a-f0-9]{64}\.json$/
+    /^\/Compute_Intelligence\/data\/mcp\/history\/[a-f0-9]{64}\.json$/
   );
 });

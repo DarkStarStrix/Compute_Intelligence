@@ -1,6 +1,6 @@
 # Maintainer adapter integration guide
 
-This guide covers GPU, CPU, TPU, and sandbox integrations. A provider can contribute an adapter directly or start with the [provider request form](https://github.com/DarkStarStrix/gpu-price-tracker/issues/new?template=provider.yml). Providers submit one data-only JSON file using [provider intake](../provider-submissions/README.md) and its PR template. The adapter changes below belong in a separate maintainer integration PR, never the provider intake PR. Submissions are not runtime configuration and do not become live listings automatically.
+This guide covers GPU, CPU, TPU, and sandbox integrations. A provider can contribute an adapter directly or start with the [provider request form](https://github.com/DarkStarStrix/Compute_Intelligence/issues/new?template=provider.yml). Providers submit one data-only JSON file using [provider intake](../provider-submissions/README.md) and its PR template. The adapter changes below belong in a separate maintainer integration PR, never the provider intake PR. Submissions are not runtime configuration and do not become live listings automatically.
 
 ## Before coding
 

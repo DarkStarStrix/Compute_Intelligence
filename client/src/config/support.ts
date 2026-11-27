@@ -1,3 +1,4 @@
+import { project } from "../../../shared/project";
 // Public settings only. Add approved links here; never add API keys or payout details.
 export interface Referral {
   providerId: string;
@@ -31,8 +32,7 @@ export const supportSettings: SupportSettings = {
   sponsors: [],
 };
 
-export const repositoryUrl =
-  "https://github.com/DarkStarStrix/gpu-price-tracker";
+export const repositoryUrl = project.repositoryUrl;
 export const sponsorshipFallback = `${repositoryUrl}/issues/new?template=sponsorship.yml`;
 
 export function publicUrl(value: string): string | undefined {

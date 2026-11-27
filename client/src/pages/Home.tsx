@@ -336,7 +336,7 @@ export default function Home() {
           </p>
           <p className="mt-1">
             <a
-              href="https://github.com/DarkStarStrix/gpu-price-tracker/actions/workflows/pages.yml"
+              href={`${repositoryUrl}/actions/workflows/pages.yml`}
               target="_blank"
               rel="noopener noreferrer"
               className="font-medium text-teal underline"
@@ -745,7 +745,7 @@ export default function Home() {
               className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-teal"
             >
               <a
-                href="https://github.com/DarkStarStrix/gpu-price-tracker"
+                href={repositoryUrl}
                 className="inline-flex items-center gap-1.5 underline"
                 target="_blank"
                 rel="noopener noreferrer"

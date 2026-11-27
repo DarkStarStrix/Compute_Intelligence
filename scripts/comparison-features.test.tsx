@@ -63,7 +63,7 @@ it("opens shared exact listings with the saved filters and time window", async (
     search: "A100 & GPU",
     region: "Not specified",
   };
-  const base = "https://darkstarstrix.github.io/gpu-price-tracker/";
+  const base = "https://darkstarstrix.github.io/Compute_Intelligence/";
   const ids = [offers[1].offerId, offers[0].offerId, "retired"];
   const through = Date.parse(at);
   const state = { view: "offers", ids, filters, hours: 24, through } as const;
