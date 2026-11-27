@@ -1,7 +1,7 @@
 import { it, expect, vi } from "vitest";
 import { createWorker } from "../mcp/worker";
 import { dataFor } from "./fixtures/mcp";
-const env: Omit<ComputeMcpEnv, "ASSETS"> = {
+const env: ComputeMcpEnv = {
   ALLOWED_ORIGINS: "http://127.0.0.1:8791",
   ALLOWED_HOSTS: "127.0.0.1:8791",
   IP_LIMIT: { limit: async () => ({ success: true }) },

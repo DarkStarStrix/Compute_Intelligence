@@ -1,4 +1,4 @@
-import { it, expect } from "vitest";
+import { it, expect, vi } from "vitest";
 import { mcpSnapshotFiles, historyFileId } from "../shared/mcp-snapshot";
 import { createPublishedData, sampleHistory } from "../mcp/data";
 import { fixture, at, now } from "./fixtures/mcp";
@@ -73,7 +73,9 @@ it("retrieves only the requested listing history and fails explicitly for missin
   const requests: string[] = [];
   const data = createPublishedData(async url => {
     requests.push(String(url));
-    const file = files.find(f => String(url).endsWith(f.name));
+    const file = files.find(f =>
+      new URL(String(url)).pathname.endsWith(f.name)
+    );
     return file
       ? new Response(file.content)
       : new Response(null, { status: 404 });
@@ -103,4 +105,56 @@ it("rejects future-dated snapshots instead of treating them as fresh", async () 
   await expect(
     createPublishedData(async () => Response.json(snapshot)).current()
   ).rejects.toThrow("future");
+});
+
+it("fetches newer publications without recreating the data adapter and scopes history to its revision", async () => {
+  const old = fixture(),
+    next = fixture();
+  next.generatedAt = new Date(
+    Date.parse(old.generatedAt) + 60000
+  ).toISOString();
+  let latest = old;
+  const urls: URL[] = [];
+  const data = createPublishedData(async input => {
+    const url = new URL(input);
+    urls.push(url);
+    return Response.json(
+      url.pathname.endsWith("catalog.json")
+        ? latest
+        : { snapshotAt: latest.generatedAt, points: [] }
+    );
+  });
+  expect((await data.current()).generatedAt).toBe(old.generatedAt);
+  latest = next;
+  expect((await data.current(true)).generatedAt).toBe(next.generatedAt);
+  expect(urls[0].searchParams.has("poll")).toBe(true);
+  expect(urls[1].searchParams.has("retry")).toBe(true);
+  await data.history(next, "node", 0, now, 20);
+  expect(urls[2].searchParams.get("revision")).toBe(next.generatedAt);
+});
+
+it("rotates the normal catalog cache key each minute without a manual refresh", async () => {
+  vi.useFakeTimers();
+  try {
+    vi.setSystemTime(now);
+    const old = fixture(),
+      next = fixture();
+    next.generatedAt = new Date(now + 60000).toISOString();
+    let latest = old;
+    const urls: URL[] = [];
+    const data = createPublishedData(async input => {
+      urls.push(new URL(input));
+      return Response.json(latest);
+    });
+    expect((await data.current()).generatedAt).toBe(old.generatedAt);
+    vi.advanceTimersByTime(60000);
+    latest = next;
+    expect((await data.current()).generatedAt).toBe(next.generatedAt);
+    expect(Number(urls[1].searchParams.get("poll"))).toBe(
+      Number(urls[0].searchParams.get("poll")) + 1
+    );
+    expect(urls[1].searchParams.has("retry")).toBe(false);
+  } finally {
+    vi.useRealTimers();
+  }
 });

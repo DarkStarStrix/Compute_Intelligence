@@ -1,26 +1,48 @@
-# Development verification — November 26, 2026
+# Live development verification — November 26, 2026
 
-Target: `compute-intelligence-mcp-dev.allanw-mk.workers.dev/mcp`. Production Pages, collector, watchlist and analytics deployments were not changed.
+Target: `https://compute-intelligence-mcp-dev.allanw-mk.workers.dev/mcp`, version 0.2.0. The dev Worker reads the live Pages feed; it has no static dataset binding or preparation step. Website hosting remains GitHub Pages. Provider collection, scheduling, watchlists and analytics logic were not changed.
 
-## Executed checks
+## Publication and deployed integration
+
+Main commit `86a46705f9ba848e40534f3446fcf0a5ffecdf36` adds derived MCP files to the existing Pages build and verifies their publication timestamp alongside `data/current.json`. GitHub run `45913684801` passed and published `2026-11-26T23:55:20.221Z` (6:55 p.m. Eastern). The published catalog included 1,965 GPU offers plus CPU, TPU and sandbox listings.
+
+Cloudflare dev deployment `aaf34bfb-6328-4d8d-8788-5c183df0327b` reads that public feed. Its health response reports `published-snapshot` and the Pages data URL. No provider credentials, database, extra scheduled task or production MCP service was introduced.
+
+The official MCP client SDK 2.4.0 discovered exactly five tools and successfully called each against that publication in both local workerd and the hosted dev Worker:
+
+- `search_compute`: returned current H100 listings; additional searches covered CPU, TPU and sandbox types.
+- `get_offer`: returned the selected listing and its source/freshness metadata.
+- `compare_offers`: compared two current H100 listings.
+- `estimate_job_cost`: estimated nine GPUs for six hours at $90.72 for the selected single-GPU quote.
+- `get_price_history`: returned 19 sampled points from 100 real observations over 24 hours.
+
+Initial remote end-to-end times were 280 ms search, 297 ms detail, 106 ms comparison, 200 ms estimate and 155 ms history. These are individual observations from this machine, not p95, CPU-time, sustained-load or uptime guarantees.
+
+## Observed automatic refresh
+
+The existing Cloudflare backup automatically dispatched GitHub run `45915424075` at `2026-11-27T00:12:55Z` (7:12:55 p.m. Eastern on November 26). Build, Pages deployment verification and alerts completed successfully. The resulting publication was `2026-11-27T00:13:31.383Z` (7:13 p.m. Eastern), containing 2,015 GPU offers. The public website snapshot and MCP feed reported that same timestamp.
+
+One official SDK client stayed connected from the previous publication and observed its `search_compute` response advance from `23:55:20.221Z` to `00:13:31.383Z`. The Worker remained deployment `aaf34bfb-6328-4d8d-8788-5c183df0327b`; no manual collection, client restart or Worker redeployment caused that observed advance.
+
+The watcher's subsequent five-tool exercise hit a 60-second SDK request timeout. A separate default-client retry also timed out. An IPv4-preferred retry passed all five tools, then a standard retry **without** that override also passed all five, plus CPU/TPU/sandbox searches, on the new generation. The standard final run measured search 446 ms, detail 172 ms, comparison 210 ms, estimate 99 ms and history 148 ms; cost was $90.72 and history retained 100 observations / 19 sampled points. Live logs inspected during diagnosis showed successful requests, not a confirmed application exception. Root cause of the intermittent timeout is unproven; these checks do not establish sustained transport reliability. The watcher demonstrated automatic advancement, but its complete uninterrupted five-tool sequence did not pass; the later standard SDK run established all five tools on the refreshed data.
+
+## Architecture-design pass
+
+Traced scheduled collection, durable snapshot ownership, Pages derivation/deployment, edge caching, schema validation, generation-race recovery and every tool's shared billing/freshness dependencies. The canonical design, alternative tradeoffs, component contracts, failure propagation and promotion/withdrawal gates are in `mcp/README.md`. No additional collector, database, mutable state or orchestration layer is needed for this repair. The confirmed pinned-data disconnect is removed; publication delay, upstream quote freshness and client transport reliability remain separate concerns.
+
+## Local regression evidence
 
 - `pnpm check`: passed.
-- `pnpm test`: 33 files / 169 tests passed, including 17 focused MCP tests.
-- `pnpm build:pages`: passed; emits the existing site plus derived MCP snapshot files. This build was not deployed to Pages.
-- `pnpm audit --prod --audit-level high`: no known vulnerabilities found.
-- Wrangler generated binding types, dry-run packaging and isolated dev deployment succeeded.
-- Official MCP client SDK 2.4.0 discovered all five tools and called each in local workerd and on the Cloudflare dev endpoint. Searches covered GPU, CPU, TPU and sandbox types.
-- Remote simultaneous clients returned sandbox and CPU results to their respective callers. Unknown listing and invalid limit returned tool errors. Hostile Origin returned 403. Local transport tests also cover host rejection, oversized/malformed requests and throttling.
-- Legacy 2025-11-25 protocol initialization and schemas were tested directly. The official current client completed end-to-end transport calls. Interoperability with a second independent client application remains a production promotion check.
+- `pnpm test`: 34 files / 175 tests passed.
+- `pnpm check:mcp`: 20 tests passed.
+- `pnpm build:pages`: passed with the derived feed exporter.
+- Binding generation, Wrangler packaging and the live dev deployment succeeded. Hosted health returned 200 with live-feed metadata; hostile Origin returned 403 and an unknown route returned 404.
+- Formatting checks and `git diff --check`: passed.
 
-## Observed timings
+New regression cases cover automatic minute-by-minute cache-key rotation without recreating the adapter, consuming a newer catalog, revision-scoped history requests, one bounded retry during a publication race, and explicit failure when revisions still disagree. Publisher tests check all listing kinds, source-state preservation, original observations/origins, timestamp deduplication, seven-day retention and safe hashed filenames. Existing transport, invalid-input, source-failure, stale-stock and whole-node billing checks remain intact. The whole-node fixture independently expects two eight-GPU nodes for nine requested GPUs: 2 nodes × 6 hours × $16/node-hour = $192.
 
-Single local smoke run after per-listing history preparation: first GPU search 52 ms, warm tools about 18–20 ms including history. Single first remote smoke run: search 418 ms; get_offer 189 ms; compare 104 ms; estimate 92 ms; history 416 ms; subsequent CPU/TPU/sandbox searches 84–111 ms. These are end-to-end observations from this machine, not p95 measurements, CPU-time measurements or performance guarantees.
+## Limits
 
-The prepared dataset is the real published snapshot `2026-11-26T23:13:29.066Z`: 1,929 GPU offers, additional compute feeds, and 1,623,555 recorded archive observations processed before deployment. The sample H100 history returned 19 real sampled points from 99 observations over 24 hours. The whole-node regression independently checks 9 requested GPUs on 8-GPU nodes for six hours at $16/node-hour: 2 nodes × 6 × $16 = $192.
+“Live” means the latest successfully published collector snapshot; it does not query provider stock on demand. A fresh publication can contain failed sources or old quotes, which retain their actual timestamps and stale/unknown availability. The existing two-hour freshness policy remains in effect. The adapter never fabricates observations or silently falls back to a pinned dataset when the feed fails.
 
-## Limits and release boundary
-
-This preview pins data for reproducibility and does not refresh automatically. It explicitly returns `pinned-development-snapshot`, original timestamps and normal stale/stock warnings. Refresh with `pnpm prepare:mcp` and redeploy the dev Worker. The shared two-hour freshness policy remains in effect. No fabricated current stock or observations are returned.
-
-No sustained-load, uptime, second-client UI or automatic-production-refresh claim is made. The Pages-derived feed export and live data adapter are present on the branch, but require a separate approved production release. No private credentials, customer data or provider bookings are involved in these checks.
+The automatic collector retains its existing GitHub and Cloudflare scheduling dependencies. This change does not promise exact wall-clock scheduling, upstream availability, sustained throughput or interoperability with a second client application's UI. This remains a dev MCP endpoint for trials.

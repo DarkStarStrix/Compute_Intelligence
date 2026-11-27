@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { createComputeService, offerView } from "../mcp/service";
+import { ComputeError, createComputeService, offerView } from "../mcp/service";
 import {
   searchInput,
   costInput,
@@ -199,4 +199,45 @@ describe("compute query contracts", () => {
       )
     ).rejects.toThrow("revisions differ");
   });
+});
+
+it("retries one catalog/history publication race using a cache-bypassed catalog", async () => {
+  const old = fixture(),
+    next = fixture();
+  next.generatedAt = new Date(now + 1000).toISOString();
+  const data = dataFor(old),
+    refreshes: boolean[] = [];
+  let calls = 0;
+  data.current = async refresh => {
+    refreshes.push(!!refresh);
+    return refresh ? next : old;
+  };
+  data.history = async s => {
+    calls++;
+    if (calls === 1)
+      throw new ComputeError("snapshot_changed", "Publication changed");
+    return {
+      snapshotAt: s.generatedAt,
+      points: [],
+      observations: 0,
+      first: null,
+      last: null,
+      highUsd: null,
+      lowUsd: null,
+    };
+  };
+  const result = await createComputeService(data, () => now + 1000).history(
+    historyInput.parse({ offerId: "node" })
+  );
+  expect(result.snapshotAt).toBe(next.generatedAt);
+  expect(refreshes).toEqual([false, true]);
+  expect(calls).toBe(2);
+  data.history = async () => {
+    throw new ComputeError("snapshot_changed", "Publication still changing");
+  };
+  await expect(
+    createComputeService(data, () => now).history(
+      historyInput.parse({ offerId: "node" })
+    )
+  ).rejects.toThrow("Publication still changing");
 });

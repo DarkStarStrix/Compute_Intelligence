@@ -38,8 +38,8 @@ export interface HistoryResult {
   last: HistoryResult["points"][number] | null;
 }
 export interface ComputeData {
-  mode: "published-snapshot" | "pinned-development-snapshot";
-  current(): Promise<Snapshot>;
+  mode: "published-snapshot";
+  current(refresh?: boolean): Promise<Snapshot>;
   history(
     snapshot: Snapshot,
     offerId: string,
@@ -104,10 +104,6 @@ function meta(
   dataMode: ComputeData["mode"]
 ) {
   const warnings = [caveat];
-  if (dataMode === "pinned-development-snapshot")
-    warnings.push(
-      "Development dataset: pinned at snapshotAt; refresh preparation and redeploy to update it. Prices and stock still age normally."
-    );
   if (offers.some(o => !o.current))
     warnings.push(
       "Some quotes are retained or stale; availability is unknown for those quotes."
@@ -262,22 +258,30 @@ export function createComputeService(data: ComputeData, clock = Date.now) {
       };
     },
     async history(args: z.infer<typeof historyInput>) {
-      const s = await data.current(),
-        now = clock(),
+      const now = clock();
+      let s = await data.current();
+      let offer = offerView(s, find(s, args.offerId), now);
+      let until = Math.min(now, Date.parse(s.generatedAt));
+      let since = until - args.hours * 3600000;
+      let h: HistoryResult;
+      try {
+        h = await data.history(s, args.offerId, since, until, args.maxPoints);
+      } catch (error) {
+        if (
+          !(error instanceof ComputeError) ||
+          error.code !== "snapshot_changed"
+        )
+          throw error;
+        s = await data.current(true);
         offer = offerView(s, find(s, args.offerId), now);
-      const until = Math.min(now, Date.parse(s.generatedAt)),
+        until = Math.min(now, Date.parse(s.generatedAt));
         since = until - args.hours * 3600000;
-      const h = await data.history(
-        s,
-        args.offerId,
-        since,
-        until,
-        args.maxPoints
-      );
+        h = await data.history(s, args.offerId, since, until, args.maxPoints);
+      }
       if (h.snapshotAt !== s.generatedAt)
         throw new ComputeError(
           "snapshot_changed",
-          "Catalog and history revisions differ. Retry after the next publication completes."
+          "Catalog and history revisions differ. Retry after publication completes."
         );
       return {
         ...meta(s, now, [offer], data.mode),

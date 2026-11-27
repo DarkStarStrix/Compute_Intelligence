@@ -5,31 +5,18 @@ import { createPublishedData } from "./data";
 
 // A new SDK server per exchange prevents request or client state leaking between callers.
 export function createWorker(data?: Parameters<typeof createServer>[0]) {
-  function handlerFor(
-    env: Omit<ComputeMcpEnv, "ASSETS"> & Partial<Pick<ComputeMcpEnv, "ASSETS">>
-  ) {
-    let source = data;
-    if (!source) {
-      const assets = env.ASSETS;
-      if (!assets) throw new Error("MCP snapshot assets are not bound");
-      source = createPublishedData(
-        input => assets.fetch(input),
-        "https://mcp-data.invalid/",
-        "pinned-development-snapshot"
-      );
-    }
-    const requestData = source;
-    return createMcpHandler(() => createServer(requestData), {
+  const handler = createMcpHandler(
+    () => createServer(data ?? createPublishedData()),
+    {
       legacy: "stateless",
       maxRequestBodySize: 16384,
       maxSubscriptions: 0,
-    });
-  }
+    }
+  );
   return {
     async fetch(
       request: Request,
-      env: Omit<ComputeMcpEnv, "ASSETS"> &
-        Partial<Pick<ComputeMcpEnv, "ASSETS">>,
+      env: ComputeMcpEnv,
       _ctx?: ExecutionContext
     ): Promise<Response> {
       const url = new URL(request.url);
@@ -56,9 +43,11 @@ export function createWorker(data?: Parameters<typeof createServer>[0]) {
           {
             service: "compute-intelligence-mcp",
             environment: "development",
-            version: "0.1.0",
+            version: "0.2.0",
             readOnly: true,
-            dataMode: "pinned-development-snapshot",
+            dataMode: "published-snapshot",
+            dataSource:
+              "https://darkstarstrix.github.io/gpu-price-tracker/data/mcp/",
           },
           { headers }
         );
@@ -82,7 +71,7 @@ export function createWorker(data?: Parameters<typeof createServer>[0]) {
       }
       const started = Date.now();
       try {
-        const response = await handlerFor(env).fetch(request);
+        const response = await handler.fetch(request);
         const out = new Response(response.body, response);
         headers.forEach((v, k) => out.headers.set(k, v));
         console.log({

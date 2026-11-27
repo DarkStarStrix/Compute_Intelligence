@@ -140,7 +140,7 @@ export function fixture(): Snapshot {
 }
 export function dataFor(snapshot = fixture()): ComputeData {
   return {
-    mode: "pinned-development-snapshot",
+    mode: "published-snapshot",
     current: async () => snapshot,
     history: async () => ({
       snapshotAt: snapshot.generatedAt,

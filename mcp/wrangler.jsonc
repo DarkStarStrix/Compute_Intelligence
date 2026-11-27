@@ -30,9 +30,4 @@
       "enabled": true,
     },
   },
-  "assets": {
-    "directory": ".data",
-    "binding": "ASSETS",
-    "run_worker_first": true,
-  },
 }

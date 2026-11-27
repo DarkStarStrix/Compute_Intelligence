@@ -77,7 +77,7 @@ export const offerOutput = z.object({
   terms: z.string().nullable(),
 });
 export const metadataOutput = {
-  dataMode: z.enum(["published-snapshot", "pinned-development-snapshot"]),
+  dataMode: z.literal("published-snapshot"),
   snapshotAt: z.string(),
   evaluatedAt: z.string(),
   warnings: z.array(z.string()),

@@ -64,11 +64,10 @@ type DataFetch = (
   init?: RequestInit
 ) => Promise<BoundedBody & { ok: boolean }>;
 
-// Fixed data root, never a user-provided URL. Cloudflare dev uses its static asset binding.
+// Fixed published data root; callers cannot supply arbitrary upstream URLs.
 export function createPublishedData(
   fetcher: DataFetch = fetch,
-  baseUrl = "https://darkstarstrix.github.io/gpu-price-tracker/data/mcp/",
-  mode: ComputeData["mode"] = "published-snapshot"
+  baseUrl = "https://darkstarstrix.github.io/gpu-price-tracker/data/mcp/"
 ): ComputeData {
   async function get(file: string, maxBytes: number) {
     const options = {
@@ -88,9 +87,14 @@ export function createPublishedData(
     return JSON.parse(await readBounded(response, maxBytes));
   }
   return {
-    mode,
-    async current(): Promise<Snapshot> {
-      const snapshot = snapshotSchema.parse(await get("catalog.json", 4000000));
+    mode: "published-snapshot",
+    async current(refresh = false): Promise<Snapshot> {
+      const snapshot = snapshotSchema.parse(
+        await get(
+          `catalog.json?poll=${Math.floor(Date.now() / 60000)}${refresh ? `&retry=${crypto.randomUUID()}` : ""}`,
+          4000000
+        )
+      );
       if (Date.parse(snapshot.generatedAt) > Date.now() + 60000)
         throw new ComputeError(
           "invalid_snapshot",
@@ -101,7 +105,10 @@ export function createPublishedData(
     async history(snapshot, id, since, until, maxPoints) {
       return sampleHistory(
         historyFileSchema.parse(
-          await get(`history/${await historyFileId(id)}.json`, 2000000)
+          await get(
+            `history/${await historyFileId(id)}.json?revision=${encodeURIComponent(snapshot.generatedAt)}`,
+            2000000
+          )
         ),
         snapshot.generatedAt,
         since,
